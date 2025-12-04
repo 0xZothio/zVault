@@ -13,3 +13,8 @@ states/
 # Optional
 .env
 .env.local
+
+**/config/
+node_modules
+
+typechain-types/
