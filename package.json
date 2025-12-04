@@ -12,9 +12,11 @@
     "deploy:mainnet": "hardhat deploy --network mainnet",
     "deploy:amoy": "hardhat deploy --network amoy",
     "deploy:access-control": "hardhat deploy --tags MidasAccessControl",
-    "deploy:mhyper": "hardhat deploy --tags mHYPER",
+    "deploy:zhyper": "hardhat deploy --tags zHYPER",
     "deploy:oracle": "hardhat deploy --tags PriceOracle",
-    "deploy:vault": "hardhat deploy --tags MHyperDepositVault",
+    "deploy:deposit-vault": "hardhat deploy --tags ZHyperDepositVault",
+    "deploy:redemption-vault": "hardhat deploy --tags RedemptionVault",
+    "deploy:all": "hardhat deploy --tags Complete",
     "node": "hardhat node",
     "clean": "hardhat clean && rm -rf cache artifacts deployments.json config/deployed"
   },
