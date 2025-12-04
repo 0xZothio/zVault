@@ -3,32 +3,39 @@ export interface BaseConfig {
     chainId: number
 }
 
-export interface AdminRoles {
-    gatekeeperAdmin: string
-    orchestratorAdmin: string
-    guardianAdmin: string
-    treasuryAdmin: string
-}
-
-export interface OperationalRoles {
-    gatekeeper: string
-    orchestrator: string
-    guardian: string
-    treasury: string
-    whitelister: string
-}
-
 export interface ContractAddresses {
     [key: string]: string
 }
 
+/**
+ * Configuration for zVault protocol deployments
+ */
 export interface MidasDeploymentConfig extends BaseConfig {
-    adminRoles: AdminRoles
-    operationalRoles: OperationalRoles
+    /**
+     * Contract addresses - automatically populated during deployment
+     */
     contractAddresses: ContractAddresses
+    /**
+     * Address where deposited tokens are collected (used by DepositVault)
+     * Defaults to deployer address if not specified
+     */
     tokensReceiver?: string
+    /**
+     * Address where all fees are collected (used by both vaults)
+     * Defaults to deployer address if not specified
+     */
     feeReceiver?: string
+    /**
+     * Sanctions checking contract address (optional)
+     * Use zero address to disable. Defaults to zero address if not specified
+     */
     sanctionsList?: string
+    /**
+     * Address that holds tokens for standard redemption requests (used by RedemptionVault)
+     * This address must hold the tokens (USDC, USDT, etc.) that users want to redeem
+     * Defaults to deployer address if not specified
+     */
+    requestRedeemer?: string
 }
 
 export interface DeploymentResult {
