@@ -12,24 +12,24 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     await deploymentManager.initialize();
 
     // Get the contract factory
-    const MidasAccessControl = await ethers.getContractFactory('MidasAccessControl')
+    const ZothAccessControl = await ethers.getContractFactory('ZothAccessControl')
 
     // Encode initializer
-    const initData = MidasAccessControl.interface.encodeFunctionData(
+    const initData = ZothAccessControl.interface.encodeFunctionData(
         'initialize',
         []
     )
 
     // Deploy the contract
     const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
-        'MidasAccessControl',
-        MidasAccessControl,
+        'ZothAccessControl',
+        ZothAccessControl,
         [],
         initData
     )
 
     // Verify deployment
-    const accessControl = MidasAccessControl.attach(proxyAddress)
+    const accessControl = ZothAccessControl.attach(proxyAddress)
     const [deployer] = await ethers.getSigners()
 
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash
@@ -47,18 +47,18 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(
-        'MidasAccessControl',
+        'ZothAccessControl',
         [implementationAddress, proxyAddress],
         [],
         initData
     )
-    await deploymentManager.verifyOnTenderly('MidasAccessControl', [implementationAddress, proxyAddress])
+    await deploymentManager.verifyOnTenderly('ZothAccessControl', [implementationAddress, proxyAddress])
 
-    Logger.deploymentSuccess('MidasAccessControl', proxyAddress)
+    Logger.deploymentSuccess('ZothAccessControl', proxyAddress)
 
     return true
 }
 
 export default func
-func.tags = ['MidasAccessControl']
-func.id = 'deploy_midas_access_control'
+func.tags = ['ZothAccessControl']
+func.id = 'deploy_zoth_access_control'

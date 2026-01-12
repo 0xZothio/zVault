@@ -1,7 +1,7 @@
 import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ConfigService } from '../services/ConfigService';
-import { MidasDeploymentConfig } from '../utils/types';
+import { ZothDeploymentConfig } from '../utils/types';
 import { Logger } from '../utils/logger';
 
 export class DeploymentManager {
@@ -19,7 +19,7 @@ export class DeploymentManager {
         await this.configService.loadConfig(this.network);
     }
 
-    public async getConfig(): Promise<MidasDeploymentConfig> {
+    public async getConfig(): Promise<ZothDeploymentConfig> {
         return this.configService.loadConfig(this.network);
     }
 

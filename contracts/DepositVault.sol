@@ -108,7 +108,7 @@ contract DepositVault is ManageableVault, IDepositVault {
      * This ensures that every deployment, whether fresh or upgraded, ends up
      * initialized to the latest contract state without breaking the
      * initializer/reinitializer versioning rules.
-     * @param _ac address of MidasAccessControll contract
+     * @param _ac address of ZothAccessControl contract
      * @param _zTokenInitParams init params for zToken
      * @param _receiversInitParams init params for receivers
      * @param _instantInitParams init params for instant operations
@@ -145,7 +145,7 @@ contract DepositVault is ManageableVault, IDepositVault {
 
     /**
      * @notice v1 initializer
-     * @param _ac address of MidasAccessControll contract
+     * @param _ac address of ZothAccessControl contract
      * @param _zTokenInitParams init params for zToken
      * @param _receiversInitParams init params for receivers
      * @param _instantInitParams init params for instant operations

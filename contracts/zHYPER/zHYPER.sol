@@ -40,11 +40,11 @@ contract zHYPER is ERC20PausableUpgradeable, Blacklistable {
 
     /**
      * @notice upgradeable pattern contract`s initializer
-     * @param _accessControl address of MidasAccessControl contract
+     * @param _accessControl address of ZothAccessControl contract
      */
     function initialize(address _accessControl) external initializer {
         __Blacklistable_init(_accessControl);
-        __ERC20_init("Midas Hyperithm", "zHYPER");
+        __ERC20_init("Zoth Hyperithm", "zHYPER");
     }
 
     /**

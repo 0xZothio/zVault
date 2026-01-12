@@ -48,7 +48,7 @@ zVault is a DeFi protocol that provides:
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │   ┌─────────────────┐                    ┌─────────────────────────┐    │
-│   │ MidasAccessCtrl │◄───────────────────│   FunctionsAccessCtrl   │    │
+│   │ ZothAccessCtrl │◄───────────────────│   FunctionsAccessCtrl   │    │
 │   │  (Vault Roles)  │                    │    (Oracle Roles)       │    │
 │   └────────┬────────┘                    └───────────┬─────────────┘    │
 │            │                                         │                   │
@@ -107,7 +107,7 @@ zVault is a DeFi protocol that provides:
 
 | Contract | Description | Location |
 |----------|-------------|----------|
-| `MidasAccessControl.sol` | Role-based access control for vaults | `contracts/access/MidasAccessControl.sol` |
+| `ZothAccessControl.sol` | Role-based access control for vaults | `contracts/access/ZothAccessControl.sol` |
 | `FunctionsAccessControl.sol` | Role-based access for oracle operations | `contracts/access/FunctionsAccessControl.sol` |
 | `Blacklistable.sol` | Blacklist functionality | `contracts/access/Blacklistable.sol` |
 | `Greenlistable.sol` | Greenlist/whitelist functionality | `contracts/access/Greenlistable.sol` |
@@ -120,7 +120,7 @@ zVault is a DeFi protocol that provides:
 | `ManageableVault.sol` | Base vault with token management, fees, limits | `contracts/abstract/ManageableVault.sol` |
 | `ManageableVaultRedeem.sol` | Base redemption vault functionality | `contracts/abstract/ManageableVaultRedeem.sol` |
 | `WithSanctionsList.sol` | Chainalysis sanctions integration | `contracts/abstract/WithSanctionsList.sol` |
-| `MidasInitializable.sol` | Base initializable for upgradeable contracts | `contracts/abstract/MidasInitializable.sol` |
+| `ZothInitializable.sol` | Base initializable for upgradeable contracts | `contracts/abstract/ZothInitializable.sol` |
 
 ### Libraries
 
@@ -256,7 +256,7 @@ Scripts are located in the `deploy/` directory and execute in order:
 
 | Order | Script | Tag | Description |
 |-------|--------|-----|-------------|
-| 00 | `00-deploy-access-control.ts` | `MidasAccessControl` | Deploys access control contract |
+| 00 | `00-deploy-access-control.ts` | `ZothAccessControl` | Deploys access control contract |
 | 01 | `01-deploy-mhyper-token.ts` | `zHYPER` | Deploys zHYPER token |
 | 02 | `02-deploy-price-oracle.ts` | `PriceOracle` | Deploys price oracle |
 | 03 | `03-deploy-mhyper-deposit-vault.ts` | `ZHyperDepositVault` | Deploys deposit vault |
@@ -276,7 +276,7 @@ pnpm deploy:amoy
 pnpm deploy:mainnet
 
 # Deploy specific contracts
-pnpm deploy:access-control   # Only MidasAccessControl
+pnpm deploy:access-control   # Only ZothAccessControl
 pnpm deploy:zhyper          # Only zHYPER token
 pnpm deploy:oracle          # Only PriceOracle
 pnpm deploy:deposit-vault   # Only ZHyperDepositVault
@@ -293,7 +293,7 @@ pnpm clean
 ### Deployment Order
 
 ```
-MidasAccessControl
+ZothAccessControl
        │
        ▼
     zHYPER ─────────────────┐
@@ -321,7 +321,7 @@ Create `config/deployment.json` based on `config/deployment.example.json`:
   },
   "contracts": {
     "zHYPER": {
-      "name": "Midas Hyperithm",
+      "name": "Zoth Hyperithm",
       "symbol": "zHYPER"
     },
     "priceOracle": {
@@ -347,7 +347,7 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 
 ## Roles
 
-### MidasAccessControl Roles
+### ZothAccessControl Roles
 
 | Role | Description |
 |------|-------------|

@@ -14,13 +14,13 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Get config from manager
     const config = await deploymentManager.getConfig()
 
-    // Get MidasAccessControl address
-    const accessControlAddress = config.contractAddresses['MidasAccessControl']
+    // Get ZothAccessControl address
+    const accessControlAddress = config.contractAddresses['ZothAccessControl']
     if (!accessControlAddress) {
-        throw new Error('MidasAccessControl not deployed. Please deploy it first.')
+        throw new Error('ZothAccessControl not deployed. Please deploy it first.')
     }
 
-    Logger.log('Using MidasAccessControl', accessControlAddress, 1)
+    Logger.log('Using ZothAccessControl', accessControlAddress, 1)
 
     // Get the contract factory
     const ZHyper = await ethers.getContractFactory('zHYPER')
@@ -53,8 +53,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Grant necessary roles
     Logger.log('Setting up roles...', undefined, 1)
-    const MidasAccessControl = await ethers.getContractAt(
-        'MidasAccessControl',
+    const ZothAccessControl = await ethers.getContractAt(
+        'ZothAccessControl',
         accessControlAddress
     )
     const [deployer] = await ethers.getSigners()
@@ -70,7 +70,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     // Grant mint role
-    let tx = await MidasAccessControl.grantRole(
+    let tx = await ZothAccessControl.grantRole(
         Z_HYPER_MINT_OPERATOR_ROLE,
         deployer.address
     )
@@ -78,7 +78,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.success('Mint role granted to deployer', undefined, 2)
 
     // Grant burn role
-    tx = await MidasAccessControl.grantRole(
+    tx = await ZothAccessControl.grantRole(
         Z_HYPER_BURN_OPERATOR_ROLE,
         deployer.address
     )
@@ -86,7 +86,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.success('Burn role granted to deployer', undefined, 2)
 
     // Grant pause role
-    tx = await MidasAccessControl.grantRole(
+    tx = await ZothAccessControl.grantRole(
         Z_HYPER_PAUSE_OPERATOR_ROLE,
         deployer.address
     )
@@ -118,4 +118,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func
 func.tags = ['zHYPER']
 func.id = 'deploy_zhyper_token'
-func.dependencies = ['MidasAccessControl']
+func.dependencies = ['ZothAccessControl']

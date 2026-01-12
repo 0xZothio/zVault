@@ -2,8 +2,8 @@
 pragma solidity 0.8.9;
 
 import "../interfaces/ISanctionsList.sol";
-import "../access/WithMidasAccessControl.sol";
-import "./MidasInitializable.sol";
+import "../access/WithZothAccessControl.sol";
+import "./ZothInitializable.sol";
 
 /**
  * @title WithSanctionsList
@@ -11,7 +11,7 @@ import "./MidasInitializable.sol";
  * Chainalysis to check that user is not sanctioned
  * @author RedDuck Software
  */
-abstract contract WithSanctionsList is WithMidasAccessControl {
+abstract contract WithSanctionsList is WithZothAccessControl {
     /**
      * @notice address of Chainalysis sanctions oracle
      */
@@ -53,7 +53,7 @@ abstract contract WithSanctionsList is WithMidasAccessControl {
         address _accesControl,
         address _sanctionsList
     ) internal onlyInitializing {
-        __WithMidasAccessControl_init(_accesControl);
+        __WithZothAccessControl_init(_accesControl);
         __WithSanctionsList_init_unchained(_sanctionsList);
     }
 

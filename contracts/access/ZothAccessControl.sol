@@ -3,18 +3,18 @@ pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-import "./MidasAccessControlRoles.sol";
-import "../abstract/MidasInitializable.sol";
+import "./ZothAccessControlRoles.sol";
+import "../abstract/ZothInitializable.sol";
 
 /**
- * @title MidasAccessControl
- * @notice Smart contract that stores all roles for Midas project
+ * @title ZothAccessControl
+ * @notice Smart contract that stores all roles for Zoth project
  * @author RedDuck Software
  */
-contract MidasAccessControl is
+contract ZothAccessControl is
     AccessControlUpgradeable,
-    MidasInitializable,
-    MidasAccessControlRoles
+    ZothInitializable,
+    ZothAccessControlRoles
 {
     /**
      * @notice upgradeable pattern contract`s initializer
@@ -35,7 +35,7 @@ contract MidasAccessControl is
         bytes32[] memory roles,
         address[] memory addresses
     ) external {
-        require(roles.length == addresses.length, "MAC: mismatch arrays");
+        require(roles.length == addresses.length, "ZAC: mismatch arrays");
 
         for (uint256 i = 0; i < roles.length; i++) {
             _checkRole(getRoleAdmin(roles[i]), msg.sender);
@@ -54,7 +54,7 @@ contract MidasAccessControl is
         bytes32[] memory roles,
         address[] memory addresses
     ) external {
-        require(roles.length == addresses.length, "MAC: mismatch arrays");
+        require(roles.length == addresses.length, "ZAC: mismatch arrays");
         for (uint256 i = 0; i < roles.length; i++) {
             _checkRole(getRoleAdmin(roles[i]), msg.sender);
             _revokeRole(roles[i], addresses[i]);
@@ -63,7 +63,7 @@ contract MidasAccessControl is
 
     //solhint-disable disable-next-line
     function renounceRole(bytes32, address) public pure override {
-        revert("MAC: Forbidden");
+        revert("ZAC: Forbidden");
     }
 
     /**
@@ -86,3 +86,4 @@ contract MidasAccessControl is
         _grantRole(M_TBILL_PAUSE_OPERATOR_ROLE, admin);
     }
 }
+

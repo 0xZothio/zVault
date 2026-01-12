@@ -15,20 +15,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const config = await deploymentManager.getConfig()
 
     // Get required contract addresses
-    const accessControlAddress = config.contractAddresses['MidasAccessControl']
+    const accessControlAddress = config.contractAddresses['ZothAccessControl']
     const zHyperAddress = config.contractAddresses['zHYPER']
     const dataFeedAddress = config.contractAddresses['PriceOracle']
 
     if (!accessControlAddress || !zHyperAddress || !dataFeedAddress) {
         throw new Error(
             'Required contracts not deployed:\n' +
-            `  - MidasAccessControl: ${accessControlAddress || 'MISSING'}\n` +
+            `  - ZothAccessControl: ${accessControlAddress || 'MISSING'}\n` +
             `  - zHYPER: ${zHyperAddress || 'MISSING'}\n` +
             `  - PriceOracle: ${dataFeedAddress || 'MISSING'}`
         )
     }
 
-    Logger.log('MidasAccessControl', accessControlAddress, 1)
+    Logger.log('ZothAccessControl', accessControlAddress, 1)
     Logger.log('zHYPER', zHyperAddress, 1)
     Logger.log('PriceOracle', dataFeedAddress, 1)
 
@@ -98,8 +98,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Grant necessary roles
     Logger.log('Setting up roles...', undefined, 1)
-    const MidasAccessControl = await ethers.getContractAt(
-        'MidasAccessControl',
+    const ZothAccessControl = await ethers.getContractAt(
+        'ZothAccessControl',
         accessControlAddress
     )
 
@@ -111,7 +111,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     // Grant vault admin role to deployer
-    let tx = await MidasAccessControl.grantRole(
+    let tx = await ZothAccessControl.grantRole(
         Z_HYPER_DEPOSIT_VAULT_ADMIN_ROLE,
         deployer.address
     )
@@ -119,7 +119,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.success('Vault admin role granted to deployer', undefined, 2)
 
     // Grant mint role to vault
-    tx = await MidasAccessControl.grantRole(
+    tx = await ZothAccessControl.grantRole(
         Z_HYPER_MINT_OPERATOR_ROLE,
         proxyAddress
     )
@@ -156,4 +156,4 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func
 func.tags = ['ZHyperDepositVault']
 func.id = 'deploy_mhyper_deposit_vault'
-func.dependencies = ['MidasAccessControl', 'zHYPER', 'PriceOracle']
+func.dependencies = ['ZothAccessControl', 'zHYPER', 'PriceOracle']

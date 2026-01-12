@@ -10,7 +10,7 @@ export interface ContractAddresses {
 /**
  * Configuration for zVault protocol deployments
  */
-export interface MidasDeploymentConfig extends BaseConfig {
+export interface ZothDeploymentConfig extends BaseConfig {
     /**
      * Contract addresses - automatically populated during deployment
      */

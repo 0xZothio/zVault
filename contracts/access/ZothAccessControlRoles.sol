@@ -2,11 +2,11 @@
 pragma solidity 0.8.9;
 
 /**
- * @title MidasAccessControlRoles
+ * @title ZothAccessControlRoles
  * @notice Base contract that stores all roles descriptors
  * @author RedDuck Software
  */
-abstract contract MidasAccessControlRoles {
+abstract contract ZothAccessControlRoles {
     /**
      * @notice actor that can change green list statuses of addresses
      */
@@ -59,3 +59,4 @@ abstract contract MidasAccessControlRoles {
      */
     bytes32 public constant BLACKLISTED_ROLE = keccak256("BLACKLISTED_ROLE");
 }
+

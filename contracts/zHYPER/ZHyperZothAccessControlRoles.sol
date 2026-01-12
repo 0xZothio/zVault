@@ -2,11 +2,11 @@
 pragma solidity 0.8.9;
 
 /**
- * @title ZHyperMidasAccessControlRoles
+ * @title ZHyperZothAccessControlRoles
  * @notice Base contract that stores all roles descriptors for zHYPER contracts
  * @author RedDuck Software
  */
-abstract contract ZHyperMidasAccessControlRoles {
+abstract contract ZHyperZothAccessControlRoles {
     /**
      * @notice actor that can manage ZHyperDepositVault
      */
@@ -25,3 +25,4 @@ abstract contract ZHyperMidasAccessControlRoles {
     bytes32 public constant Z_HYPER_CUSTOM_AGGREGATOR_FEED_ADMIN_ROLE =
         keccak256("Z_HYPER_CUSTOM_AGGREGATOR_FEED_ADMIN_ROLE");
 }
+

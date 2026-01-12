@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "./MidasAccessControl.sol";
-import "../abstract/MidasInitializable.sol";
+import "./ZothAccessControl.sol";
+import "../abstract/ZothInitializable.sol";
 
 /**
- * @title WithMidasAccessControl
- * @notice Base contract that consumes MidasAccessControl
+ * @title WithZothAccessControl
+ * @notice Base contract that consumes ZothAccessControl
  * @author RedDuck Software
  */
-abstract contract WithMidasAccessControl is
-    MidasInitializable,
-    MidasAccessControlRoles
+abstract contract WithZothAccessControl is
+    ZothInitializable,
+    ZothAccessControlRoles
 {
     /**
      * @notice admin role
@@ -19,9 +19,9 @@ abstract contract WithMidasAccessControl is
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     /**
-     * @notice MidasAccessControl contract address
+     * @notice ZothAccessControl contract address
      */
-    MidasAccessControl public accessControl;
+    ZothAccessControl public accessControl;
 
     /**
      * @dev leaving a storage gap for futures updates
@@ -48,24 +48,25 @@ abstract contract WithMidasAccessControl is
      * @dev upgradeable pattern contract`s initializer
      */
     // solhint-disable func-name-mixedcase
-    function __WithMidasAccessControl_init(
+    function __WithZothAccessControl_init(
         address _accessControl
     ) internal onlyInitializing {
         require(_accessControl != address(0), "zero address");
-        accessControl = MidasAccessControl(_accessControl);
+        accessControl = ZothAccessControl(_accessControl);
     }
 
     /**
      * @dev checks that given `address` have `role`
      */
     function _onlyRole(bytes32 role, address account) internal view {
-        require(accessControl.hasRole(role, account), "WMAC: hasnt role");
+        require(accessControl.hasRole(role, account), "WZAC: hasnt role");
     }
 
     /**
      * @dev checks that given `address` do not have `role`
      */
     function _onlyNotRole(bytes32 role, address account) internal view {
-        require(!accessControl.hasRole(role, account), "WMAC: has role");
+        require(!accessControl.hasRole(role, account), "WZAC: has role");
     }
 }
+

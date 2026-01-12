@@ -2,7 +2,7 @@
 pragma solidity 0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import "../access/WithMidasAccessControl.sol";
+import "../access/WithZothAccessControl.sol";
 
 /**
  * @title Pausable
@@ -10,7 +10,7 @@ import "../access/WithMidasAccessControl.sol";
  * with pause functionality
  * @author RedDuck Software
  */
-abstract contract Pausable is WithMidasAccessControl, PausableUpgradeable {
+abstract contract Pausable is WithZothAccessControl, PausableUpgradeable {
     mapping(bytes4 => bool) public fnPaused;
 
     /**
@@ -46,12 +46,12 @@ abstract contract Pausable is WithMidasAccessControl, PausableUpgradeable {
 
     /**
      * @dev upgradeable pattern contract`s initializer
-     * @param _accessControl MidasAccessControl contract address
+     * @param _accessControl ZothAccessControl contract address
      */
     // solhint-disable-next-line func-name-mixedcase
     function __Pausable_init(address _accessControl) internal onlyInitializing {
         super.__Pausable_init();
-        __WithMidasAccessControl_init(_accessControl);
+        __WithZothAccessControl_init(_accessControl);
     }
 
     function pause() external onlyPauseAdmin {

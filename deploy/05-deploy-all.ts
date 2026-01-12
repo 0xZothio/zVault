@@ -7,7 +7,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { network } = hre
 
     Logger.bigSeparator('=')
-    Logger.log('🚀 MIDAS PROTOCOL - COMPLETE DEPLOYMENT')
+    Logger.log('🚀 ZOTH PROTOCOL - COMPLETE DEPLOYMENT')
     Logger.bigSeparator('=')
 
     const [deployer] = await ethers.getSigners()
@@ -69,5 +69,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func
 func.tags = ['Complete']
 func.id = 'deploy_all'
-func.dependencies = ['MidasAccessControl', 'zHYPER', 'PriceOracle', 'ZHyperDepositVault', 'RedemptionVault']
+func.dependencies = ['ZothAccessControl', 'zHYPER', 'PriceOracle', 'ZHyperDepositVault', 'RedemptionVault']
 func.runAtTheEnd = true

@@ -1,12 +1,12 @@
-import { ContractAddresses, MidasDeploymentConfig } from '../utils/types';
+import { ContractAddresses, ZothDeploymentConfig } from '../utils/types';
 
 export interface NetworkConfig {
-    [network: string]: MidasDeploymentConfig
+    [network: string]: ZothDeploymentConfig
 }
 
 export class DeploymentState {
     private static instance: DeploymentState;
-    private networkStates: Map<string, MidasDeploymentConfig> = new Map();
+    private networkStates: Map<string, ZothDeploymentConfig> = new Map();
 
     private constructor() { }
 
@@ -17,11 +17,11 @@ export class DeploymentState {
         return DeploymentState.instance;
     }
 
-    public initializeNetwork(network: string, config: MidasDeploymentConfig): void {
+    public initializeNetwork(network: string, config: ZothDeploymentConfig): void {
         this.networkStates.set(network, { ...config });
     }
 
-    public getNetworkConfig(network: string): MidasDeploymentConfig | undefined {
+    public getNetworkConfig(network: string): ZothDeploymentConfig | undefined {
         return this.networkStates.get(network);
     }
 

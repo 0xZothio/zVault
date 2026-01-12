@@ -54,7 +54,7 @@ contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
 
     /**
      * @notice upgradeable pattern contract`s initializer
-     * @param _ac address of MidasAccessControll contract
+     * @param _ac address of ZothAccessControl contract
      * @param _zTokenInitParams init params for zToken
      * @param _receiversInitParams init params for receivers
      * @param _instantInitParams init params for instant operations

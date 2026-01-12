@@ -1,12 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { DeploymentState } from '../state/DeploymentState';
-import { MidasDeploymentConfig } from '../utils/types';
+import { ZothDeploymentConfig } from '../utils/types';
 import { Logger } from '../utils/logger';
 
 interface DeploymentConfiguration {
     networks: {
-        [network: string]: MidasDeploymentConfig;
+        [network: string]: ZothDeploymentConfig;
     };
     _metadata?: {
         description: string;
@@ -16,7 +16,7 @@ interface DeploymentConfiguration {
     };
 }
 
-interface DeploymentResult extends Omit<MidasDeploymentConfig, 'contractAddresses'> {
+interface DeploymentResult extends Omit<ZothDeploymentConfig, 'contractAddresses'> {
     contractAddresses: {
         [key: string]: string;
     };
@@ -47,7 +47,7 @@ export class ConfigService {
         return ConfigService.instance;
     }
 
-    public async loadConfig(network: string): Promise<MidasDeploymentConfig> {
+    public async loadConfig(network: string): Promise<ZothDeploymentConfig> {
         try {
             // Load unified configuration
             const deploymentConfiguration = await this.loadDeploymentConfiguration();
@@ -62,7 +62,7 @@ export class ConfigService {
             const existingDeployment = await this.loadExistingDeployment(network);
 
             // Merge config with existing deployment addresses
-            const finalConfig: MidasDeploymentConfig = {
+            const finalConfig: ZothDeploymentConfig = {
                 ...networkConfig,
                 contractAddresses: existingDeployment?.contractAddresses || {}
             };
@@ -177,11 +177,11 @@ export class ConfigService {
         }
     }
 
-    public async getNetworkConfig(network: string): Promise<MidasDeploymentConfig | undefined> {
+    public async getNetworkConfig(network: string): Promise<ZothDeploymentConfig | undefined> {
         return this.state.getNetworkConfig(network);
     }
 
-    public async saveNetworkConfig(network: string, config: MidasDeploymentConfig): Promise<void> {
+    public async saveNetworkConfig(network: string, config: ZothDeploymentConfig): Promise<void> {
         this.state.initializeNetwork(network, config);
         await this.persistDeploymentResult(network);
     }

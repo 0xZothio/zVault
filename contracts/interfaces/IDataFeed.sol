@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import "@chainlink/local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
 
-import "../access/WithMidasAccessControl.sol";
+import "../access/WithZothAccessControl.sol";
 import "../libraries/DecimalsCorrectionLibrary.sol";
 
 /**

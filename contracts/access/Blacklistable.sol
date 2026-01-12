@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.9;
 
-import "./WithMidasAccessControl.sol";
+import "./WithZothAccessControl.sol";
 
 /**
  * @title Blacklistable
@@ -9,7 +9,7 @@ import "./WithMidasAccessControl.sol";
  * to work with blacklistable
  * @author RedDuck Software
  */
-abstract contract Blacklistable is WithMidasAccessControl {
+abstract contract Blacklistable is WithZothAccessControl {
     /**
      * @dev leaving a storage gap for futures updates
      */
@@ -26,13 +26,13 @@ abstract contract Blacklistable is WithMidasAccessControl {
 
     /**
      * @dev upgradeable pattern contract`s initializer
-     * @param _accessControl MidasAccessControl contract address
+     * @param _accessControl ZothAccessControl contract address
      */
     // solhint-disable func-name-mixedcase
     function __Blacklistable_init(
         address _accessControl
     ) internal onlyInitializing {
-        __WithMidasAccessControl_init(_accessControl);
+        __WithZothAccessControl_init(_accessControl);
         __Blacklistable_init_unchained();
     }
 
