@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.9;
 
 import "./access/WithFunctionsAccessControl.sol";
+import {IHypernativeFirewall} from "./interfaces/IHypernativeFirewall.sol";
 
 /**
  * @title PriceOracle
@@ -34,6 +35,77 @@ contract PriceOracle is WithFunctionsAccessControl {
     error InvalidPrice();
     error InvalidDecimals();
 
+    bytes32 private constant HYPERNATIVE_ORACLE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.firewall")) - 1);
+    bytes32 private constant HYPERNATIVE_ADMIN_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.admin")) - 1);
+    bytes32 private constant HYPERNATIVE_MODE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.is_strict_mode")) - 1);
+
+    event FirewallAdminChanged(
+        address indexed previousAdmin,
+        address indexed newAdmin
+    );
+    event FirewallAddressChanged(
+        address indexed previousFirewall,
+        address indexed newFirewall
+    );
+
+    error PriceOracle_InvalidFirewall(address firewall);
+
+    modifier onlyFirewallApproved() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.validateForbiddenContextInteraction(tx.origin, msg.sender);
+        _;
+    }
+
+    modifier onlyFirewallApprovedAllowEOA() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.validateBlacklistedAccountInteraction(msg.sender);
+        if (tx.origin == msg.sender && msg.sender.code.length == 0) {
+            _;
+            return;
+        }
+
+        firewall.validateForbiddenContextInteraction(tx.origin, msg.sender);
+        _;
+    }
+
+    modifier onlyNotBlacklistedEOA() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        require(
+            msg.sender == tx.origin && msg.sender.code.length == 0,
+            "FirewallProtected: caller is not EOA"
+        );
+        firewall.validateBlacklistedAccountInteraction(msg.sender);
+        _;
+    }
+
+    modifier onlyFirewallAdmin() {
+        require(
+            msg.sender == hypernativeFirewallAdmin(),
+            "FirewallProtected: caller is not the firewall admin"
+        );
+        _;
+    }
+
     /**
      * @notice Constructor
      * @param _accessControl Address of the FunctionsAccessControl contract
@@ -43,14 +115,19 @@ contract PriceOracle is WithFunctionsAccessControl {
     constructor(
         address _accessControl,
         uint8 _priceDecimals,
-        uint256 _tolerancePercent
+        uint256 _tolerancePercent,
+        address _firewall
     ) {
+        if (_firewall == address(0))
+            revert PriceOracle_InvalidFirewall(_firewall);
         _initializeAccessControl(_accessControl);
         require(_priceDecimals <= 18, "Decimals too high");
         require(_tolerancePercent <= 10000, "Tolerance cannot exceed 100%");
 
         priceDecimals = _priceDecimals;
         tolerancePercent = _tolerancePercent;
+        _changeFirewallAdmin(msg.sender);
+        setFirewall(_firewall);
     }
 
     /**
@@ -103,7 +180,7 @@ contract PriceOracle is WithFunctionsAccessControl {
      */
     function setPrice(
         uint256 _price
-    ) external onlyRole(accessControl.PRICE_ADMIN_ROLE()) {
+    ) external onlyFirewallApproved onlyRole(accessControl.PRICE_ADMIN_ROLE()) {
         if (_price == 0) revert InvalidPrice();
 
         // Convert input price to base18
@@ -208,5 +285,76 @@ contract PriceOracle is WithFunctionsAccessControl {
     function isPriceStale(uint256 maxAge) external view returns (bool) {
         if (lastUpdateTimestamp == 0) return true;
         return (block.timestamp - lastUpdateTimestamp) > maxAge;
+    }
+
+    function firewallRegister(address _account) public virtual {
+        address firewallAddress = _hypernativeFirewall();
+        bool isStrictMode = _hypernativeFirewallIsStrictMode();
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.register(_account, isStrictMode);
+    }
+
+    /**
+     * @dev Admin only function, sets new firewall admin. set to address(0) to revoke firewall
+     */
+    function setFirewall(address _firewall) public onlyFirewallAdmin {
+        address oldFirewall = _hypernativeFirewall();
+        _setAddressBySlot(HYPERNATIVE_ORACLE_STORAGE_SLOT, _firewall);
+        emit FirewallAddressChanged(oldFirewall, _firewall);
+    }
+
+    function setIsStrictMode(bool _mode) public onlyFirewallAdmin {
+        _setValueBySlot(HYPERNATIVE_MODE_STORAGE_SLOT, _mode ? 1 : 0);
+    }
+
+    function changeFirewallAdmin(address _newAdmin) public onlyFirewallAdmin {
+        require(_newAdmin != address(0), "Firewall admin cannot be set to 0");
+        _changeFirewallAdmin(_newAdmin);
+    }
+
+    function _changeFirewallAdmin(address _newAdmin) internal {
+        address oldAdmin = hypernativeFirewallAdmin();
+        _setAddressBySlot(HYPERNATIVE_ADMIN_STORAGE_SLOT, _newAdmin);
+        emit FirewallAdminChanged(oldAdmin, _newAdmin);
+    }
+
+    function _setAddressBySlot(bytes32 slot, address newAddress) internal {
+        assembly {
+            sstore(slot, newAddress)
+        }
+    }
+
+    function _setValueBySlot(bytes32 _slot, uint256 _value) internal {
+        assembly {
+            sstore(_slot, _value)
+        }
+    }
+
+    function hypernativeFirewallAdmin() public view returns (address) {
+        return _getAddressBySlot(HYPERNATIVE_ADMIN_STORAGE_SLOT);
+    }
+
+    function _hypernativeFirewallIsStrictMode() private view returns (bool) {
+        return _getValueBySlot(HYPERNATIVE_MODE_STORAGE_SLOT) == 1;
+    }
+
+    function _hypernativeFirewall() private view returns (address) {
+        return _getAddressBySlot(HYPERNATIVE_ORACLE_STORAGE_SLOT);
+    }
+
+    function _getAddressBySlot(
+        bytes32 slot
+    ) internal view returns (address addr) {
+        assembly {
+            addr := sload(slot)
+        }
+    }
+
+    function _getValueBySlot(
+        bytes32 _slot
+    ) internal view returns (uint256 value) {
+        assembly {
+            value := sload(_slot)
+        }
     }
 }

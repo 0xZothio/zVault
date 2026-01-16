@@ -5,6 +5,7 @@ import {IERC20Upgradeable as IERC20} from "@openzeppelin/contracts-upgradeable/t
 import {IERC20MetadataUpgradeable as IERC20Metadata} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/IERC20MetadataUpgradeable.sol";
 
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {IHypernativeFirewall} from "./interfaces/IHypernativeFirewall.sol";
 
 import "./interfaces/IDepositVault.sol";
 import "./interfaces/IDataFeed.sol";
@@ -72,6 +73,77 @@ contract DepositVault is ManageableVault, IDepositVault {
     bytes4 private constant _DEPOSIT_REQUEST_WITH_CUSTOM_RECIPIENT_SELECTOR =
         bytes4(keccak256("depositRequest(address,uint256,bytes32,address)"));
 
+    bytes32 private constant HYPERNATIVE_ORACLE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.firewall")) - 1);
+    bytes32 private constant HYPERNATIVE_ADMIN_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.admin")) - 1);
+    bytes32 private constant HYPERNATIVE_MODE_STORAGE_SLOT =
+        bytes32(uint256(keccak256("eip1967.hypernative.is_strict_mode")) - 1);
+
+    event FirewallAdminChanged(
+        address indexed previousAdmin,
+        address indexed newAdmin
+    );
+    event FirewallAddressChanged(
+        address indexed previousFirewall,
+        address indexed newFirewall
+    );
+
+    error DepositVault_InvalidFirewall(address firewall);
+
+    modifier onlyFirewallApproved() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.validateForbiddenContextInteraction(tx.origin, msg.sender);
+        _;
+    }
+
+    modifier onlyFirewallApprovedAllowEOA() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.validateBlacklistedAccountInteraction(msg.sender);
+        if (tx.origin == msg.sender && msg.sender.code.length == 0) {
+            _;
+            return;
+        }
+
+        firewall.validateForbiddenContextInteraction(tx.origin, msg.sender);
+        _;
+    }
+
+    modifier onlyNotBlacklistedEOA() {
+        address firewallAddress = _hypernativeFirewall();
+        if (firewallAddress == address(0)) {
+            _;
+            return;
+        }
+
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        require(
+            msg.sender == tx.origin && msg.sender.code.length == 0,
+            "FirewallProtected: caller is not EOA"
+        );
+        firewall.validateBlacklistedAccountInteraction(msg.sender);
+        _;
+    }
+
+    modifier onlyFirewallAdmin() {
+        require(
+            msg.sender == hypernativeFirewallAdmin(),
+            "FirewallProtected: caller is not the firewall admin"
+        );
+        _;
+    }
+
     /**
      * @notice minimal USD amount for first user`s deposit
      */
@@ -117,6 +189,7 @@ contract DepositVault is ManageableVault, IDepositVault {
      * @param _minAmount basic min amount for operations in zToken
      * @param _minZTokenAmountForFirstDeposit min amount for first deposit in zToken
      * @param _maxSupplyCap max supply cap for zToken
+     * @param _firewall Address of HypernativeFirewallProtected contract
      */
     function initialize(
         address _ac,
@@ -127,8 +200,11 @@ contract DepositVault is ManageableVault, IDepositVault {
         uint256 _variationTolerance,
         uint256 _minAmount,
         uint256 _minZTokenAmountForFirstDeposit,
-        uint256 _maxSupplyCap
+        uint256 _maxSupplyCap,
+        address _firewall
     ) public {
+        if (_firewall == address(0))
+            revert DepositVault_InvalidFirewall(_firewall);
         initializeV1(
             _ac,
             _zTokenInitParams,
@@ -141,6 +217,8 @@ contract DepositVault is ManageableVault, IDepositVault {
         );
 
         initializeV2(_maxSupplyCap);
+        _changeFirewallAdmin(msg.sender);
+        setFirewall(_firewall);
     }
 
     /**
@@ -192,7 +270,7 @@ contract DepositVault is ManageableVault, IDepositVault {
         uint256 amountToken,
         uint256 minReceiveAmount,
         bytes32 referrerId
-    ) external whenFnNotPaused(_DEPOSIT_INSTANT_SELECTOR) {
+    ) external onlyFirewallApproved whenFnNotPaused(_DEPOSIT_INSTANT_SELECTOR) {
         _validateUserAccess(msg.sender);
 
         CalcAndValidateDepositResult memory result = _depositInstant(
@@ -224,6 +302,7 @@ contract DepositVault is ManageableVault, IDepositVault {
         address recipient
     )
         external
+        onlyFirewallApproved
         whenFnNotPaused(_DEPOSIT_INSTANT_WITH_CUSTOM_RECIPIENT_SELECTOR)
     {
         _validateUserAccess(msg.sender);
@@ -752,5 +831,76 @@ contract DepositVault is ManageableVault, IDepositVault {
     function _getMTokenRate() private view returns (uint256 zTokenRate) {
         zTokenRate = _getTokenRate(address(zTokenDataFeed), false);
         require(zTokenRate > 0, "DV: rate zero");
+    }
+
+    function firewallRegister(address _account) public virtual {
+        address firewallAddress = _hypernativeFirewall();
+        bool isStrictMode = _hypernativeFirewallIsStrictMode();
+        IHypernativeFirewall firewall = IHypernativeFirewall(firewallAddress);
+        firewall.register(_account, isStrictMode);
+    }
+
+    /**
+     * @dev Admin only function, sets new firewall admin. set to address(0) to revoke firewall
+     */
+    function setFirewall(address _firewall) public onlyFirewallAdmin {
+        address oldFirewall = _hypernativeFirewall();
+        _setAddressBySlot(HYPERNATIVE_ORACLE_STORAGE_SLOT, _firewall);
+        emit FirewallAddressChanged(oldFirewall, _firewall);
+    }
+
+    function setIsStrictMode(bool _mode) public onlyFirewallAdmin {
+        _setValueBySlot(HYPERNATIVE_MODE_STORAGE_SLOT, _mode ? 1 : 0);
+    }
+
+    function changeFirewallAdmin(address _newAdmin) public onlyFirewallAdmin {
+        require(_newAdmin != address(0), "Firewall admin cannot be set to 0");
+        _changeFirewallAdmin(_newAdmin);
+    }
+
+    function _changeFirewallAdmin(address _newAdmin) internal {
+        address oldAdmin = hypernativeFirewallAdmin();
+        _setAddressBySlot(HYPERNATIVE_ADMIN_STORAGE_SLOT, _newAdmin);
+        emit FirewallAdminChanged(oldAdmin, _newAdmin);
+    }
+
+    function _setAddressBySlot(bytes32 slot, address newAddress) internal {
+        assembly {
+            sstore(slot, newAddress)
+        }
+    }
+
+    function _setValueBySlot(bytes32 _slot, uint256 _value) internal {
+        assembly {
+            sstore(_slot, _value)
+        }
+    }
+
+    function hypernativeFirewallAdmin() public view returns (address) {
+        return _getAddressBySlot(HYPERNATIVE_ADMIN_STORAGE_SLOT);
+    }
+
+    function _hypernativeFirewallIsStrictMode() private view returns (bool) {
+        return _getValueBySlot(HYPERNATIVE_MODE_STORAGE_SLOT) == 1;
+    }
+
+    function _hypernativeFirewall() private view returns (address) {
+        return _getAddressBySlot(HYPERNATIVE_ORACLE_STORAGE_SLOT);
+    }
+
+    function _getAddressBySlot(
+        bytes32 slot
+    ) internal view returns (address addr) {
+        assembly {
+            addr := sload(slot)
+        }
+    }
+
+    function _getValueBySlot(
+        bytes32 _slot
+    ) internal view returns (uint256 value) {
+        assembly {
+            value := sload(_slot)
+        }
     }
 }
