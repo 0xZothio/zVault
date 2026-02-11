@@ -2,14 +2,16 @@
 pragma solidity 0.8.9;
 
 import "./access/WithFunctionsAccessControl.sol";
+import "./interfaces/IDataFeed.sol";
 import {IHypernativeFirewall} from "./interfaces/IHypernativeFirewall.sol";
 
 /**
  * @title PriceOracle
  * @notice A price oracle contract with tolerance checking and base18 conversion
  * @dev Allows authorized price admins to update prices with deviation protection
+ * @dev Implements IDataFeed interface for compatibility with vault contracts
  */
-contract PriceOracle is WithFunctionsAccessControl {
+contract PriceOracle is WithFunctionsAccessControl, IDataFeed {
     // Price data
     uint256 public currentPrice; // Price in base18 format
     uint256 public lastUpdateTimestamp;
@@ -254,8 +256,17 @@ contract PriceOracle is WithFunctionsAccessControl {
      * @notice Get the current price in base18 format
      * @return price The current price with 18 decimals
      */
-    function getDataInBase18() external view returns (uint256) {
+    function getDataInBase18() external view override returns (uint256) {
         return currentPrice;
+    }
+
+    /**
+     * @notice Returns the role responsible for managing prices in this contract
+     * @return role The PRICE_ADMIN_ROLE from the access control contract
+     * @dev Implements IDataFeed.feedAdminRole() for interface compliance
+     */
+    function feedAdminRole() external view override returns (bytes32) {
+        return accessControl.PRICE_ADMIN_ROLE();
     }
 
     /**
