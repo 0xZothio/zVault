@@ -24,4 +24,10 @@ interface IDataFeed {
      * @return role descriptor
      */
     function feedAdminRole() external view returns (bytes32);
+
+    /**
+     * @notice returns the timestamp of the last price update
+     * @return timestamp of last update
+     */
+    function getLastUpdateTimestamp() external view returns (uint256);
 }
