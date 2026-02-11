@@ -16,27 +16,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Get required contract addresses
     const accessControlAddress = config.contractAddresses['ZothAccessControl']
-    const zHyperAddress = config.contractAddresses['zHYPER']
+    const zeUSDAddress = config.contractAddresses['ZeUSD']
     const dataFeedAddress = config.contractAddresses['PriceOracle']
 
-    if (!accessControlAddress || !zHyperAddress || !dataFeedAddress) {
+    if (!accessControlAddress || !zeUSDAddress || !dataFeedAddress) {
         throw new Error(
             'Required contracts not deployed:\n' +
             `  - ZothAccessControl: ${accessControlAddress || 'MISSING'}\n` +
-            `  - zHYPER: ${zHyperAddress || 'MISSING'}\n` +
+            `  - ZeUSD: ${zeUSDAddress || 'MISSING'}\n` +
             `  - PriceOracle: ${dataFeedAddress || 'MISSING'}`
         )
     }
 
     Logger.log('ZothAccessControl', accessControlAddress, 1)
-    Logger.log('zHYPER', zHyperAddress, 1)
+    Logger.log('ZeUSD', zeUSDAddress, 1)
     Logger.log('PriceOracle', dataFeedAddress, 1)
 
     // Configuration parameters
     const [deployer] = await ethers.getSigners()
 
     const zTokenInitParams = {
-        zToken: zHyperAddress,
+        zToken: zeUSDAddress,
         zTokenDataFeed: dataFeedAddress,
     }
 
@@ -53,14 +53,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const sanctionsList = config.sanctionsList || ethers.ZeroAddress
     const variationTolerance = 200 // 2%
     const minAmount = ethers.parseEther('1')
-
-    const fiatRedemptionInitParams = {
-        fiatAdditionalFee: 100, // 1%
-        fiatFlatFee: ethers.parseEther('10'), // 10 zToken
-        minFiatRedeemAmount: ethers.parseEther('100'),
-    }
-
-    const requestRedeemer = config.requestRedeemer || deployer.address
+    const minZTokenAmountForFirstDeposit = ethers.parseEther('1')
+    const maxSupplyCap = ethers.parseEther('1000000000')
 
     Logger.log('Configuration:', '', 1)
     Logger.log('Tokens Receiver', receiversInitParams.tokensReceiver, 2)
@@ -68,14 +62,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('Instant Fee', (instantInitParams.instantFee / 100) + '%', 2)
     Logger.log('Daily Limit', ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 2)
     Logger.log('Variation Tolerance', (variationTolerance / 100) + '%', 2)
-    Logger.log('Min Amount', ethers.formatEther(minAmount) + ' zToken', 2)
-    Logger.log('Fiat Additional Fee', (fiatRedemptionInitParams.fiatAdditionalFee / 100) + '%', 2)
-    Logger.log('Fiat Flat Fee', ethers.formatEther(fiatRedemptionInitParams.fiatFlatFee) + ' zToken', 2)
-    Logger.log('Min Fiat Redeem Amount', ethers.formatEther(fiatRedemptionInitParams.minFiatRedeemAmount) + ' zToken', 2)
-    Logger.log('Request Redeemer', requestRedeemer, 2)
+    Logger.log('Min Amount', ethers.formatEther(minAmount) + ' USD', 2)
+    Logger.log('Min First Deposit', ethers.formatEther(minZTokenAmountForFirstDeposit) + ' USD', 2)
+    Logger.log('Max Supply Cap', ethers.formatEther(maxSupplyCap), 2)
 
     // Get the contract factory
-    const RedemptionVault = await ethers.getContractFactory('RedemptionVault')
+    const ZeUSDDepositVault = await ethers.getContractFactory('ZeUSDDepositVault')
 
     // Prepare initialization parameters
     const initParams = [
@@ -86,20 +78,20 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         sanctionsList,
         variationTolerance,
         minAmount,
-        fiatRedemptionInitParams,
-        requestRedeemer,
+        minZTokenAmountForFirstDeposit,
+        maxSupplyCap,
     ]
 
     // Encode initializer
-    const initData = RedemptionVault.interface.encodeFunctionData(
+    const initData = ZeUSDDepositVault.interface.encodeFunctionData(
         'initialize',
         initParams
     )
 
     // Deploy the contract
     const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
-        'RedemptionVault',
-        RedemptionVault,
+        'ZeUSDDepositVault',
+        ZeUSDDepositVault,
         [],
         initData
     )
@@ -111,60 +103,57 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         accessControlAddress
     )
 
-    const REDEMPTION_VAULT_ADMIN_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('REDEMPTION_VAULT_ADMIN_ROLE')
+    const ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes('ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE')
     )
-    const Z_HYPER_BURN_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('Z_HYPER_BURN_OPERATOR_ROLE')
+    const ZEUSD_MINT_OPERATOR_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes('ZEUSD_MINT_OPERATOR_ROLE')
     )
 
     // Grant vault admin role to deployer
     let tx = await ZothAccessControl.grantRole(
-        REDEMPTION_VAULT_ADMIN_ROLE,
+        ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE,
         deployer.address
     )
     await tx.wait()
     Logger.success('Vault admin role granted to deployer', undefined, 2)
 
-    // Grant burn role to vault
+    // Grant mint role to vault
     tx = await ZothAccessControl.grantRole(
-        Z_HYPER_BURN_OPERATOR_ROLE,
+        ZEUSD_MINT_OPERATOR_ROLE,
         proxyAddress
     )
     await tx.wait()
-    Logger.success('Burn role granted to vault', undefined, 2)
+    Logger.success('Mint role granted to vault', undefined, 2)
 
     // Verify deployment
-    const vault = RedemptionVault.attach(proxyAddress)
+    const vault = ZeUSDDepositVault.attach(proxyAddress)
     const vaultAccessControl = await vault.accessControl()
     const vaultZToken = await vault.zToken()
     const vaultMinAmount = await vault.minAmount()
-    const vaultMinFiatRedeemAmount = await vault.minFiatRedeemAmount()
-    const vaultRequestRedeemer = await vault.requestRedeemer()
+    const vaultMaxSupplyCap = await vault.maxSupplyCap()
 
     Logger.log('Verification:', '', 1)
     Logger.log('Access Control matches', (vaultAccessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 2)
-    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zHyperAddress.toLowerCase()).toString(), 2)
+    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zeUSDAddress.toLowerCase()).toString(), 2)
     Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
-    Logger.log('Min Fiat Redeem Amount', ethers.formatEther(vaultMinFiatRedeemAmount), 2)
-    Logger.log('Request Redeemer', vaultRequestRedeemer, 2)
+    Logger.log('Max Supply Cap', ethers.formatEther(vaultMaxSupplyCap), 2)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(
-        'RedemptionVault',
+        'ZeUSDDepositVault',
         [implementationAddress, proxyAddress],
         [],
         initData
     )
-    await deploymentManager.verifyOnTenderly('RedemptionVault', [implementationAddress, proxyAddress])
+    await deploymentManager.verifyOnTenderly('ZeUSDDepositVault', [implementationAddress, proxyAddress])
 
-    Logger.deploymentSuccess('RedemptionVault', proxyAddress)
+    Logger.deploymentSuccess('ZeUSDDepositVault', proxyAddress)
 
     return true
 }
 
 export default func
-func.tags = ['RedemptionVault']
-func.id = 'deploy_zhyper_redemption_vault'
-func.dependencies = ['ZothAccessControl', 'zHYPER', 'PriceOracle']
-
+func.tags = ['ZeUSDDepositVault']
+func.id = 'deploy_zeusd_deposit_vault'
+func.dependencies = ['ZothAccessControl', 'ZeUSD', 'PriceOracle']

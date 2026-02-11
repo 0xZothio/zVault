@@ -20,22 +20,22 @@ abstract contract ZothAccessControlRoles {
         keccak256("BLACKLIST_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can mint mTBILL
+     * @notice actor that can mint ZeUSD
      */
-    bytes32 public constant M_TBILL_MINT_OPERATOR_ROLE =
-        keccak256("M_TBILL_MINT_OPERATOR_ROLE");
+    bytes32 public constant ZEUSD_MINT_OPERATOR_ROLE =
+        keccak256("ZEUSD_MINT_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can burn mTBILL
+     * @notice actor that can burn ZeUSD
      */
-    bytes32 public constant M_TBILL_BURN_OPERATOR_ROLE =
-        keccak256("M_TBILL_BURN_OPERATOR_ROLE");
+    bytes32 public constant ZEUSD_BURN_OPERATOR_ROLE =
+        keccak256("ZEUSD_BURN_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can pause mTBILL
+     * @notice actor that can pause ZeUSD
      */
-    bytes32 public constant M_TBILL_PAUSE_OPERATOR_ROLE =
-        keccak256("M_TBILL_PAUSE_OPERATOR_ROLE");
+    bytes32 public constant ZEUSD_PAUSE_OPERATOR_ROLE =
+        keccak256("ZEUSD_PAUSE_OPERATOR_ROLE");
 
     /**
      * @notice actor that have admin rights in deposit vault
@@ -59,4 +59,3 @@ abstract contract ZothAccessControlRoles {
      */
     bytes32 public constant BLACKLISTED_ROLE = keccak256("BLACKLISTED_ROLE");
 }
-

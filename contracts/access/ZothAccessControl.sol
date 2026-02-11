@@ -81,9 +81,9 @@ contract ZothAccessControl is
         _grantRole(GREENLIST_OPERATOR_ROLE, admin);
         _grantRole(BLACKLIST_OPERATOR_ROLE, admin);
 
-        _grantRole(M_TBILL_MINT_OPERATOR_ROLE, admin);
-        _grantRole(M_TBILL_BURN_OPERATOR_ROLE, admin);
-        _grantRole(M_TBILL_PAUSE_OPERATOR_ROLE, admin);
+        _grantRole(ZEUSD_MINT_OPERATOR_ROLE, admin);
+        _grantRole(ZEUSD_BURN_OPERATOR_ROLE, admin);
+        _grantRole(ZEUSD_PAUSE_OPERATOR_ROLE, admin);
     }
 }
 
