@@ -4,13 +4,16 @@ pragma solidity 0.8.9;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 
 import "../access/Blacklistable.sol";
+import "../abstract/WithSanctionsList.sol";
 import "../interfaces/IZToken.sol";
 
 /**
  * @title ZeUSD
+ * @notice ZeUSD token with blacklist and sanctions list enforcement on transfers
+ * @dev Prevents sanctioned users from transferring tokens to bypass redemption blocks
  * @author RedDuck Software
  */
-contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, IZToken {
+contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZToken {
     /**
      * @notice metadata key => metadata value
      */
@@ -24,9 +27,14 @@ contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, IZToken {
     /**
      * @notice upgradeable pattern contract`s initializer
      * @param _accessControl address of ZothAccessControl contract
+     * @param _sanctionsList address of Chainalysis sanctions oracle (use address(0) to disable)
      */
-    function initialize(address _accessControl) external virtual initializer {
+    function initialize(
+        address _accessControl,
+        address _sanctionsList
+    ) external virtual initializer {
         __Blacklistable_init(_accessControl);
+        __WithSanctionsList_init_unchained(_sanctionsList);
         __ERC20_init("ZeUSD", "ZeUSD");
     }
 
@@ -76,19 +84,61 @@ contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, IZToken {
 
     /**
      * @dev overrides _beforeTokenTransfer function to ban
-     * blaclisted users from using the token functions
+     * blacklisted and sanctioned users from using the token functions
+     * @notice Sanctioned users cannot send OR receive tokens, preventing bypass via transfers
      */
     function _beforeTokenTransfer(
         address from,
         address to,
         uint256 amount
     ) internal virtual override(ERC20PausableUpgradeable) {
-        if (to != address(0)) {
+        // Check sanctions for sender (skip on mint where from = address(0))
+        if (from != address(0)) {
+            _requireNotSanctioned(from);
             _onlyNotBlacklisted(from);
+        }
+
+        // Check sanctions for recipient (skip on burn where to = address(0))
+        if (to != address(0)) {
+            _requireNotSanctioned(to);
             _onlyNotBlacklisted(to);
         }
 
         ERC20PausableUpgradeable._beforeTokenTransfer(from, to, amount);
+    }
+
+    /**
+     * @dev Internal function to check if address is sanctioned
+     * @param account address to check
+     */
+    function _requireNotSanctioned(address account) internal view {
+        address _sanctionsList = sanctionsList;
+        if (_sanctionsList != address(0)) {
+            require(
+                !ISanctionsList(_sanctionsList).isSanctioned(account),
+                "ZeUSD: sanctioned"
+            );
+        }
+    }
+
+    /**
+     * @notice Check if an address is sanctioned
+     * @param account address to check
+     * @return true if sanctioned, false otherwise
+     */
+    function isSanctioned(address account) external view returns (bool) {
+        address _sanctionsList = sanctionsList;
+        if (_sanctionsList == address(0)) return false;
+        return ISanctionsList(_sanctionsList).isSanctioned(account);
+    }
+
+    /**
+     * @notice AC role of sanctions list admin
+     * @dev Returns DEFAULT_ADMIN_ROLE - only admin can update sanctions list
+     * @return role bytes32 role
+     */
+    function sanctionsListAdminRole() public pure override returns (bytes32) {
+        return DEFAULT_ADMIN_ROLE;
     }
 
     /**

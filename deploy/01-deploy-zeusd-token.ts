@@ -22,34 +22,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     Logger.log('Using ZothAccessControl', accessControlAddress, 1)
 
+    // Get sanctions list address (use zero address to disable)
+    const sanctionsListAddress = config.sanctionsList || ethers.ZeroAddress
+    Logger.log('Using SanctionsList', sanctionsListAddress === ethers.ZeroAddress ? 'Disabled' : sanctionsListAddress, 1)
+
     // Get the contract factory
     const ZeUSD = await ethers.getContractFactory('ZeUSD')
 
-    // Encode initializer
+    // Encode initializer with both accessControl and sanctionsList
     const initData = ZeUSD.interface.encodeFunctionData(
         'initialize',
-        [accessControlAddress]
+        [accessControlAddress, sanctionsListAddress]
     )
 
     // Deploy the contract
     const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
         'ZeUSD',
         ZeUSD,
-        [accessControlAddress],
+        [accessControlAddress, sanctionsListAddress],
         initData
     )
 
     // Verify deployment
-    const zeUSD = ZeUSD.attach(proxyAddress)
+    const zeUSD = await ethers.getContractAt('ZeUSD', proxyAddress)
     const name = await zeUSD.name()
     const symbol = await zeUSD.symbol()
     const totalSupply = await zeUSD.totalSupply()
     const accessControl = await zeUSD.accessControl()
+    const sanctionsList = await zeUSD.sanctionsList()
 
     Logger.log('Token Name', name, 1)
     Logger.log('Token Symbol', symbol, 1)
     Logger.log('Total Supply', ethers.formatEther(totalSupply), 1)
     Logger.log('Access Control matches', (accessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 1)
+    Logger.log('Sanctions List', sanctionsList === ethers.ZeroAddress ? 'Disabled' : sanctionsList, 1)
 
     // Grant necessary roles
     Logger.log('Setting up roles...', undefined, 1)
