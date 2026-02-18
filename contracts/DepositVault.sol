@@ -11,6 +11,7 @@ import "./interfaces/IDepositVault.sol";
 import "./interfaces/IDataFeed.sol";
 
 import "./abstract/ManageableVault.sol";
+import "./libraries/DecimalsCorrectionLibrary.sol";
 
 /**
  * @title DepositVault
@@ -19,6 +20,7 @@ import "./abstract/ManageableVault.sol";
  */
 contract DepositVault is ManageableVault, IDepositVault {
     using Counters for Counters.Counter;
+    using DecimalsCorrectionLibrary for uint256;
 
     /**
      * @notice return data of _calcAndValidateDeposit
@@ -273,9 +275,13 @@ contract DepositVault is ManageableVault, IDepositVault {
     ) external onlyFirewallApproved whenFnNotPaused(_DEPOSIT_INSTANT_SELECTOR) {
         _validateUserAccess(msg.sender);
 
+        // Convert native decimals to base18 for internal calculations
+        uint8 tokenDecimals = _tokenDecimals(tokenIn);
+        uint256 amountTokenBase18 = amountToken.convertToBase18(tokenDecimals);
+
         CalcAndValidateDepositResult memory result = _depositInstant(
             tokenIn,
-            amountToken,
+            amountTokenBase18,
             minReceiveAmount,
             msg.sender
         );
@@ -285,7 +291,7 @@ contract DepositVault is ManageableVault, IDepositVault {
             tokenIn,
             result.tokenAmountInUsd,
             amountToken,
-            result.feeTokenAmount,
+            result.feeTokenAmount.convertFromBase18(tokenDecimals),
             result.mintAmount,
             referrerId
         );
@@ -311,9 +317,13 @@ contract DepositVault is ManageableVault, IDepositVault {
             _validateUserAccess(recipient);
         }
 
+        // Convert native decimals to base18 for internal calculations
+        uint8 tokenDecimals = _tokenDecimals(tokenIn);
+        uint256 amountTokenBase18 = amountToken.convertToBase18(tokenDecimals);
+
         CalcAndValidateDepositResult memory result = _depositInstant(
             tokenIn,
-            amountToken,
+            amountTokenBase18,
             minReceiveAmount,
             recipient
         );
@@ -324,7 +334,7 @@ contract DepositVault is ManageableVault, IDepositVault {
             recipient,
             result.tokenAmountInUsd,
             amountToken,
-            result.feeTokenAmount,
+            result.feeTokenAmount.convertFromBase18(tokenDecimals),
             result.mintAmount,
             referrerId
         );
@@ -344,10 +354,14 @@ contract DepositVault is ManageableVault, IDepositVault {
     {
         _validateUserAccess(msg.sender);
 
+        // Convert native decimals to base18 for internal calculations
+        uint8 tokenDecimals = _tokenDecimals(tokenIn);
+        uint256 amountTokenBase18 = amountToken.convertToBase18(tokenDecimals);
+
         (
             uint256 requestId,
             CalcAndValidateDepositResult memory calcResult
-        ) = _depositRequest(tokenIn, amountToken, msg.sender);
+        ) = _depositRequest(tokenIn, amountTokenBase18, msg.sender);
 
         emit DepositRequest(
             requestId,
@@ -355,7 +369,7 @@ contract DepositVault is ManageableVault, IDepositVault {
             tokenIn,
             amountToken,
             calcResult.tokenAmountInUsd,
-            calcResult.feeTokenAmount,
+            calcResult.feeTokenAmount.convertFromBase18(tokenDecimals),
             calcResult.tokenOutRate,
             referrerId
         );
@@ -382,10 +396,14 @@ contract DepositVault is ManageableVault, IDepositVault {
             _validateUserAccess(recipient);
         }
 
+        // Convert native decimals to base18 for internal calculations
+        uint8 tokenDecimals = _tokenDecimals(tokenIn);
+        uint256 amountTokenBase18 = amountToken.convertToBase18(tokenDecimals);
+
         (
             uint256 requestId,
             CalcAndValidateDepositResult memory calcResult
-        ) = _depositRequest(tokenIn, amountToken, recipient);
+        ) = _depositRequest(tokenIn, amountTokenBase18, recipient);
 
         bytes32 referrerIdCopy = referrerId;
 
@@ -396,7 +414,7 @@ contract DepositVault is ManageableVault, IDepositVault {
             recipient,
             amountToken,
             calcResult.tokenAmountInUsd,
-            calcResult.feeTokenAmount,
+            calcResult.feeTokenAmount.convertFromBase18(tokenDecimals),
             calcResult.tokenOutRate,
             referrerIdCopy
         );

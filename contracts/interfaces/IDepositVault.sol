@@ -155,7 +155,7 @@ interface IDepositVault is IManageableVault {
      * Transfers fee in tokenIn to feeReceiver.
      * Mints zToken to user.
      * @param tokenIn address of tokenIn
-     * @param amountToken amount of `tokenIn` that will be taken from user (decimals 18)
+     * @param amountToken amount of `tokenIn` that will be taken from user (native token decimals, e.g., 6 for USDC)
      * @param minReceiveAmount minimum expected amount of zToken to receive (decimals 18)
      * @param referrerId referrer id
      */
@@ -169,7 +169,7 @@ interface IDepositVault is IManageableVault {
     /**
      * @notice Does the same as original `depositInstant` but allows specifying a custom tokensReceiver address.
      * @param tokenIn address of tokenIn
-     * @param amountToken amount of `tokenIn` that will be taken from user (decimals 18)
+     * @param amountToken amount of `tokenIn` that will be taken from user (native token decimals, e.g., 6 for USDC)
      * @param minReceiveAmount minimum expected amount of zToken to receive (decimals 18)
      * @param referrerId referrer id
      * @param tokensReceiver address to receive the tokens (instead of msg.sender)
@@ -189,7 +189,7 @@ interface IDepositVault is IManageableVault {
      * Transfers fee in tokenIn to feeReceiver.
      * Creates mint request.
      * @param tokenIn address of tokenIn
-     * @param amountToken amount of `tokenIn` that will be taken from user (decimals 18)
+     * @param amountToken amount of `tokenIn` that will be taken from user (native token decimals, e.g., 6 for USDC)
      * @param referrerId referrer id
      * @return request id
      */
@@ -202,7 +202,7 @@ interface IDepositVault is IManageableVault {
     /**
      * @notice Does the same as original `depositRequest` but allows specifying a custom tokensReceiver address.
      * @param tokenIn address of tokenIn
-     * @param amountToken amount of `tokenIn` that will be taken from user (decimals 18)
+     * @param amountToken amount of `tokenIn` that will be taken from user (native token decimals, e.g., 6 for USDC)
      * @param referrerId referrer id
      * @param recipient address that receives the zTokens
      * @return request id

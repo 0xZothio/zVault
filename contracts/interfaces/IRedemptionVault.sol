@@ -111,7 +111,7 @@ interface IRedemptionVault is IManageableVaultRedeem {
      * Transfers tokenOut to user.
      * @param tokenOut stable coin token address to redeem to
      * @param amountZTokenIn amount of zToken to redeem (decimals 18)
-     * @param minReceiveAmount minimum expected amount of tokenOut to receive (decimals 18)
+     * @param minReceiveAmount minimum expected amount of tokenOut to receive (native token decimals, e.g., 6 for USDC)
      */
     function redeemInstant(
         address tokenOut,
