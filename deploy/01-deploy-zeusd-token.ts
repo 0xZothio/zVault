@@ -22,34 +22,40 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     Logger.log('Using ZothAccessControl', accessControlAddress, 1)
 
-    // Get the contract factory
-    const ZHyper = await ethers.getContractFactory('zHYPER')
+    // Get sanctions list address (use zero address to disable)
+    const sanctionsListAddress = config.sanctionsList || ethers.ZeroAddress
+    Logger.log('Using SanctionsList', sanctionsListAddress === ethers.ZeroAddress ? 'Disabled' : sanctionsListAddress, 1)
 
-    // Encode initializer
-    const initData = ZHyper.interface.encodeFunctionData(
+    // Get the contract factory
+    const ZeUSD = await ethers.getContractFactory('ZeUSD')
+
+    // Encode initializer with both accessControl and sanctionsList
+    const initData = ZeUSD.interface.encodeFunctionData(
         'initialize',
-        [accessControlAddress]
+        [accessControlAddress, sanctionsListAddress]
     )
 
     // Deploy the contract
     const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
-        'zHYPER',
-        ZHyper,
-        [accessControlAddress],
+        'ZeUSD',
+        ZeUSD,
+        [accessControlAddress, sanctionsListAddress],
         initData
     )
 
     // Verify deployment
-    const zHyper = ZHyper.attach(proxyAddress)
-    const name = await zHyper.name()
-    const symbol = await zHyper.symbol()
-    const totalSupply = await zHyper.totalSupply()
-    const accessControl = await zHyper.accessControl()
+    const zeUSD = await ethers.getContractAt('ZeUSD', proxyAddress)
+    const name = await zeUSD.name()
+    const symbol = await zeUSD.symbol()
+    const totalSupply = await zeUSD.totalSupply()
+    const accessControl = await zeUSD.accessControl()
+    const sanctionsList = await zeUSD.sanctionsList()
 
     Logger.log('Token Name', name, 1)
     Logger.log('Token Symbol', symbol, 1)
     Logger.log('Total Supply', ethers.formatEther(totalSupply), 1)
     Logger.log('Access Control matches', (accessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 1)
+    Logger.log('Sanctions List', sanctionsList === ethers.ZeroAddress ? 'Disabled' : sanctionsList, 1)
 
     // Grant necessary roles
     Logger.log('Setting up roles...', undefined, 1)
@@ -59,19 +65,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
     const [deployer] = await ethers.getSigners()
 
-    const Z_HYPER_MINT_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('Z_HYPER_MINT_OPERATOR_ROLE')
+    const ZEUSD_MINT_OPERATOR_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes('ZEUSD_MINT_OPERATOR_ROLE')
     )
-    const Z_HYPER_BURN_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('Z_HYPER_BURN_OPERATOR_ROLE')
+    const ZEUSD_BURN_OPERATOR_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes('ZEUSD_BURN_OPERATOR_ROLE')
     )
-    const Z_HYPER_PAUSE_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('Z_HYPER_PAUSE_OPERATOR_ROLE')
+    const ZEUSD_PAUSE_OPERATOR_ROLE = ethers.keccak256(
+        ethers.toUtf8Bytes('ZEUSD_PAUSE_OPERATOR_ROLE')
     )
 
     // Grant mint role
     let tx = await ZothAccessControl.grantRole(
-        Z_HYPER_MINT_OPERATOR_ROLE,
+        ZEUSD_MINT_OPERATOR_ROLE,
         deployer.address
     )
     await tx.wait()
@@ -79,7 +85,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Grant burn role
     tx = await ZothAccessControl.grantRole(
-        Z_HYPER_BURN_OPERATOR_ROLE,
+        ZEUSD_BURN_OPERATOR_ROLE,
         deployer.address
     )
     await tx.wait()
@@ -87,7 +93,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Grant pause role
     tx = await ZothAccessControl.grantRole(
-        Z_HYPER_PAUSE_OPERATOR_ROLE,
+        ZEUSD_PAUSE_OPERATOR_ROLE,
         deployer.address
     )
     await tx.wait()
@@ -96,26 +102,26 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Test minting
     Logger.log('Testing token mint...', undefined, 1)
     const testAmount = ethers.parseEther('100')
-    tx = await zHyper.mint(deployer.address, testAmount)
+    tx = await zeUSD.mint(deployer.address, testAmount)
     await tx.wait()
-    const balance = await zHyper.balanceOf(deployer.address)
+    const balance = await zeUSD.balanceOf(deployer.address)
     Logger.success('Test mint successful. Balance', ethers.formatEther(balance), 2)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(
-        'zHYPER',
+        'ZeUSD',
         [implementationAddress, proxyAddress],
         [accessControlAddress],
         initData
     )
-    await deploymentManager.verifyOnTenderly('zHYPER', [implementationAddress, proxyAddress])
+    await deploymentManager.verifyOnTenderly('ZeUSD', [implementationAddress, proxyAddress])
 
-    Logger.deploymentSuccess('zHYPER Token', proxyAddress)
+    Logger.deploymentSuccess('ZeUSD Token', proxyAddress)
 
     return true
 }
 
 export default func
-func.tags = ['zHYPER']
-func.id = 'deploy_zhyper_token'
+func.tags = ['ZeUSD']
+func.id = 'deploy_zeusd_token'
 func.dependencies = ['ZothAccessControl']

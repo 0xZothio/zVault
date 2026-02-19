@@ -2,14 +2,14 @@
 pragma solidity 0.8.9;
 
 import "../DepositVault.sol";
-import "./ZHyperZothAccessControlRoles.sol";
+import "./ZeUSDZothAccessControlRoles.sol";
 
 /**
- * @title ZHyperDepositVault
- * @notice Smart contract that handles zHYPER minting
+ * @title ZeUSDDepositVault
+ * @notice Smart contract that handles ZeUSD minting
  * @author RedDuck Software
  */
-contract ZHyperDepositVault is DepositVault, ZHyperZothAccessControlRoles {
+contract ZeUSDDepositVault is DepositVault, ZeUSDZothAccessControlRoles {
     /**
      * @dev leaving a storage gap for futures updates
      */
@@ -19,6 +19,6 @@ contract ZHyperDepositVault is DepositVault, ZHyperZothAccessControlRoles {
      * @inheritdoc ManageableVault
      */
     function vaultRole() public pure override returns (bytes32) {
-        return Z_HYPER_DEPOSIT_VAULT_ADMIN_ROLE;
+        return ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE;
     }
 }

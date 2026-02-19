@@ -69,5 +69,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 export default func
 func.tags = ['Complete']
 func.id = 'deploy_all'
-func.dependencies = ['ZothAccessControl', 'zHYPER', 'PriceOracle', 'ZHyperDepositVault', 'RedemptionVault']
+func.dependencies = ['ZothAccessControl', 'ZeUSD', 'PriceOracle', 'ZeUSDDepositVault', 'RedemptionVault']
 func.runAtTheEnd = true

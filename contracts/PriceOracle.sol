@@ -2,19 +2,22 @@
 pragma solidity 0.8.9;
 
 import "./access/WithFunctionsAccessControl.sol";
+import "./interfaces/IDataFeed.sol";
 import {IHypernativeFirewall} from "./interfaces/IHypernativeFirewall.sol";
 
 /**
  * @title PriceOracle
  * @notice A price oracle contract with tolerance checking and base18 conversion
  * @dev Allows authorized price admins to update prices with deviation protection
+ * @dev Implements IDataFeed interface for compatibility with vault contracts
  */
-contract PriceOracle is WithFunctionsAccessControl {
+contract PriceOracle is WithFunctionsAccessControl, IDataFeed {
     // Price data
     uint256 public currentPrice; // Price in base18 format
     uint256 public lastUpdateTimestamp;
     uint8 public priceDecimals; // Decimals of the input price
     uint256 public tolerancePercent; // Tolerance percentage in basis points (e.g., 1000 = 10%)
+    uint256 public maxStaleness; // Maximum age of price in seconds before it's considered stale (0 = disabled)
 
     // Events
     event PriceUpdated(
@@ -25,6 +28,7 @@ contract PriceOracle is WithFunctionsAccessControl {
     );
     event ToleranceUpdated(uint256 oldTolerance, uint256 newTolerance);
     event PriceDecimalsUpdated(uint8 oldDecimals, uint8 newDecimals);
+    event MaxStalenessUpdated(uint256 oldMaxStaleness, uint256 newMaxStaleness);
 
     // Errors
     error ToleranceExceeded(
@@ -34,6 +38,8 @@ contract PriceOracle is WithFunctionsAccessControl {
     );
     error InvalidPrice();
     error InvalidDecimals();
+    error StalePrice(uint256 lastUpdate, uint256 currentTime, uint256 maxAge);
+    error PriceNotSet();
 
     bytes32 private constant HYPERNATIVE_ORACLE_STORAGE_SLOT =
         bytes32(uint256(keccak256("eip1967.hypernative.firewall")) - 1);
@@ -111,11 +117,14 @@ contract PriceOracle is WithFunctionsAccessControl {
      * @param _accessControl Address of the FunctionsAccessControl contract
      * @param _priceDecimals Initial decimals for price input
      * @param _tolerancePercent Initial tolerance in basis points
+     * @param _maxStaleness Maximum age of price in seconds (0 = disabled)
+     * @param _firewall Address of the Hypernative firewall contract
      */
     constructor(
         address _accessControl,
         uint8 _priceDecimals,
         uint256 _tolerancePercent,
+        uint256 _maxStaleness,
         address _firewall
     ) {
         if (_firewall == address(0))
@@ -126,6 +135,7 @@ contract PriceOracle is WithFunctionsAccessControl {
 
         priceDecimals = _priceDecimals;
         tolerancePercent = _tolerancePercent;
+        maxStaleness = _maxStaleness;
         _changeFirewallAdmin(msg.sender);
         setFirewall(_firewall);
     }
@@ -251,11 +261,54 @@ contract PriceOracle is WithFunctionsAccessControl {
     }
 
     /**
+     * @notice Set the maximum staleness for price data
+     * @param _maxStaleness Maximum age of price in seconds (0 = disabled)
+     * @dev Only accounts with CONFIG_ROLE can call this
+     */
+    function setMaxStaleness(
+        uint256 _maxStaleness
+    ) external onlyRole(accessControl.CONFIG_ROLE()) {
+        uint256 oldMaxStaleness = maxStaleness;
+        maxStaleness = _maxStaleness;
+        emit MaxStalenessUpdated(oldMaxStaleness, _maxStaleness);
+    }
+
+    /**
      * @notice Get the current price in base18 format
+     * @dev Reverts if price is stale (when maxStaleness > 0)
      * @return price The current price with 18 decimals
      */
-    function getDataInBase18() external view returns (uint256) {
+    function getDataInBase18() external view override returns (uint256) {
+        // Check if price has ever been set
+        if (lastUpdateTimestamp == 0) revert PriceNotSet();
+        
+        // Check staleness if maxStaleness is configured (> 0)
+        if (maxStaleness > 0) {
+            uint256 priceAge = block.timestamp - lastUpdateTimestamp;
+            if (priceAge > maxStaleness) {
+                revert StalePrice(lastUpdateTimestamp, block.timestamp, maxStaleness);
+            }
+        }
+        
         return currentPrice;
+    }
+
+    /**
+     * @notice Returns the role responsible for managing prices in this contract
+     * @return role The PRICE_ADMIN_ROLE from the access control contract
+     * @dev Implements IDataFeed.feedAdminRole() for interface compliance
+     */
+    function feedAdminRole() external view override returns (bytes32) {
+        return accessControl.PRICE_ADMIN_ROLE();
+    }
+
+    /**
+     * @notice Returns the timestamp of the last price update
+     * @return timestamp of the last update
+     * @dev Implements IDataFeed.getLastUpdateTimestamp() for interface compliance
+     */
+    function getLastUpdateTimestamp() external view override returns (uint256) {
+        return lastUpdateTimestamp;
     }
 
     /**

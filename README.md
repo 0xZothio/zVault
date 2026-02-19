@@ -1,6 +1,6 @@
 # zVault Protocol
 
-A tokenized vault system for the zHYPER token, enabling users to deposit stablecoins and receive zHYPER tokens, as well as redeem zHYPER tokens back for underlying assets.
+A tokenized vault system for the ZeUSD token, enabling users to deposit stablecoins and receive ZeUSD tokens, as well as redeem ZeUSD tokens back for underlying assets.
 
 ## Table of Contents
 
@@ -20,8 +20,8 @@ A tokenized vault system for the zHYPER token, enabling users to deposit stablec
 
 zVault is a DeFi protocol that provides:
 
-- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive zHYPER tokens
-- **Redemption Functionality**: Users burn zHYPER tokens to receive underlying stablecoins
+- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive ZeUSD tokens
+- **Redemption Functionality**: Users burn ZeUSD tokens to receive underlying stablecoins
 - **Price Oracle**: Configurable price feed with tolerance checks for fair pricing
 - **Access Control**: Role-based permission system for secure operations
 - **Greenlist/Blacklist**: KYC/AML compliance through address filtering
@@ -54,7 +54,7 @@ zVault is a DeFi protocol that provides:
 │            │                                         │                   │
 │            ▼                                         ▼                   │
 │   ┌─────────────────┐         ┌─────────────────────────────────┐       │
-│   │   zHYPER Token  │◄────────│         PriceOracle             │       │
+│   │   ZeUSD Token   │◄────────│         PriceOracle             │       │
 │   │  (ERC20+Pause)  │         │  (Tolerance + Decimal Convert)  │       │
 │   └────────┬────────┘         └─────────────────────────────────┘       │
 │            │                              ▲           ▲                  │
@@ -63,8 +63,8 @@ zVault is a DeFi protocol that provides:
 │   │                             │                               │       │
 │   ▼                             ▼                               ▼       │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────┐  │
-│  │  DepositVault   │    │ RedemptionVault │    │ ZHyperDepositVault  │  │
-│  │  (Base Logic)   │    │  (Burn Logic)   │    │ (zHYPER-specific)   │  │
+│  │  DepositVault   │    │ RedemptionVault │    │ ZeUSDDepositVault   │  │
+│  │  (Base Logic)   │    │  (Burn Logic)   │    │ (ZeUSD-specific)    │  │
 │  └─────────────────┘    └─────────────────┘    └─────────────────────┘  │
 │           ▲                      ▲                                       │
 │           │                      │                                       │
@@ -92,16 +92,16 @@ zVault is a DeFi protocol that provides:
 
 | Contract | Description | Location |
 |----------|-------------|----------|
-| `DepositVault.sol` | Handles deposits and mints zHYPER tokens | `contracts/DepositVault.sol` |
-| `RedemptionVault.sol` | Handles redemptions and burns zHYPER tokens | `contracts/RedemptionVault.sol` |
+| `DepositVault.sol` | Handles deposits and mints ZeUSD tokens | `contracts/DepositVault.sol` |
+| `RedemptionVault.sol` | Handles redemptions and burns ZeUSD tokens | `contracts/RedemptionVault.sol` |
 | `PriceOracle.sol` | Price feed with tolerance checks and decimal conversion | `contracts/PriceOracle.sol` |
 
 ### Token Contracts
 
 | Contract | Description | Location |
 |----------|-------------|----------|
-| `zHYPER.sol` | ERC20 token with mint, burn, pause, and blacklist | `contracts/zHYPER/zHYPER.sol` |
-| `ZHyperDepositVault.sol` | zHYPER-specific deposit vault | `contracts/zHYPER/ZHyperDepositVault.sol` |
+| `ZeUSD.sol` | ERC20 token with mint, burn, pause, and blacklist | `contracts/ZeUSD/ZeUSD.sol` |
+| `ZeUSDDepositVault.sol` | ZeUSD-specific deposit vault | `contracts/ZeUSD/ZeUSDDepositVault.sol` |
 
 ### Access Control
 
@@ -135,7 +135,7 @@ zVault is a DeFi protocol that provides:
 | `IDepositVault.sol` | Deposit vault interface |
 | `IRedemptionVault.sol` | Redemption vault interface |
 | `IManageableVault.sol` | Base vault interface |
-| `IZToken.sol` | zHYPER token interface |
+| `IZToken.sol` | ZeUSD token interface |
 | `IDataFeed.sol` | Price feed interface |
 | `IVaultShared.sol` | Shared types and events |
 
@@ -257,10 +257,10 @@ Scripts are located in the `deploy/` directory and execute in order:
 | Order | Script | Tag | Description |
 |-------|--------|-----|-------------|
 | 00 | `00-deploy-access-control.ts` | `ZothAccessControl` | Deploys access control contract |
-| 01 | `01-deploy-mhyper-token.ts` | `zHYPER` | Deploys zHYPER token |
+| 01 | `01-deploy-zeusd-token.ts` | `ZeUSD` | Deploys ZeUSD token |
 | 02 | `02-deploy-price-oracle.ts` | `PriceOracle` | Deploys price oracle |
-| 03 | `03-deploy-mhyper-deposit-vault.ts` | `ZHyperDepositVault` | Deploys deposit vault |
-| 04 | `04-deploy-zhyper-redemption-vault.ts` | `RedemptionVault` | Deploys redemption vault |
+| 03 | `03-deploy-zeusd-deposit-vault.ts` | `ZeUSDDepositVault` | Deploys deposit vault |
+| 04 | `04-deploy-zeusd-redemption-vault.ts` | `RedemptionVault` | Deploys redemption vault |
 | 05 | `05-deploy-all.ts` | `Complete` | Orchestrates full deployment |
 
 ### NPM Scripts
@@ -277,9 +277,9 @@ pnpm deploy:mainnet
 
 # Deploy specific contracts
 pnpm deploy:access-control   # Only ZothAccessControl
-pnpm deploy:zhyper          # Only zHYPER token
+pnpm deploy:zeusd           # Only ZeUSD token
 pnpm deploy:oracle          # Only PriceOracle
-pnpm deploy:deposit-vault   # Only ZHyperDepositVault
+pnpm deploy:deposit-vault   # Only ZeUSDDepositVault
 pnpm deploy:redemption-vault # Only RedemptionVault
 pnpm deploy:all             # Full deployment with orchestration
 
@@ -296,13 +296,13 @@ pnpm clean
 ZothAccessControl
        │
        ▼
-    zHYPER ─────────────────┐
+     ZeUSD ─────────────────┐
        │                    │
        ▼                    │
   PriceOracle ──────────────┤
        │                    │
        ▼                    ▼
-ZHyperDepositVault    RedemptionVault
+ZeUSDDepositVault     RedemptionVault
 ```
 
 ---
@@ -320,9 +320,9 @@ Create `config/deployment.json` based on `config/deployment.example.json`:
     "chainId": 80002
   },
   "contracts": {
-    "zHYPER": {
-      "name": "Zoth Hyperithm",
-      "symbol": "zHYPER"
+    "ZeUSD": {
+      "name": "ZeUSD",
+      "symbol": "ZeUSD"
     },
     "priceOracle": {
       "initialPrice": "100000000",
@@ -356,9 +356,9 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 | `REDEMPTION_VAULT_ADMIN_ROLE` | Admin of redemption vault operations |
 | `GREENLIST_OPERATOR_ROLE` | Can add/remove from greenlist |
 | `BLACKLIST_OPERATOR_ROLE` | Can add/remove from blacklist |
-| `M_TBILL_MINT_OPERATOR_ROLE` | Can mint tokens |
-| `M_TBILL_BURN_OPERATOR_ROLE` | Can burn tokens |
-| `M_TBILL_PAUSE_OPERATOR_ROLE` | Can pause/unpause token |
+| `ZEUSD_MINT_OPERATOR_ROLE` | Can mint ZeUSD tokens |
+| `ZEUSD_BURN_OPERATOR_ROLE` | Can burn ZeUSD tokens |
+| `ZEUSD_PAUSE_OPERATOR_ROLE` | Can pause/unpause ZeUSD token |
 
 ### FunctionsAccessControl Roles
 
@@ -369,13 +369,13 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 | `CONFIG_ROLE` | Can configure oracle parameters |
 | `PRICE_ADMIN_ROLE` | Can update prices |
 
-### zHYPER Roles
+### ZeUSD Roles
 
 | Role | Description |
 |------|-------------|
-| `Z_HYPER_MINT_OPERATOR_ROLE` | Can mint zHYPER |
-| `Z_HYPER_BURN_OPERATOR_ROLE` | Can burn zHYPER |
-| `Z_HYPER_PAUSE_OPERATOR_ROLE` | Can pause/unpause zHYPER |
+| `ZEUSD_MINT_OPERATOR_ROLE` | Can mint ZeUSD |
+| `ZEUSD_BURN_OPERATOR_ROLE` | Can burn ZeUSD |
+| `ZEUSD_PAUSE_OPERATOR_ROLE` | Can pause/unpause ZeUSD |
 
 ---
 
@@ -418,7 +418,7 @@ zVault/
 │   ├── interfaces/        # Contract interfaces
 │   ├── libraries/         # Utility libraries
 │   ├── utils/            # Utility contracts (proxy)
-│   ├── zHYPER/           # zHYPER-specific contracts
+│   ├── ZeUSD/            # ZeUSD-specific contracts
 │   ├── DepositVault.sol
 │   ├── RedemptionVault.sol
 │   └── PriceOracle.sol

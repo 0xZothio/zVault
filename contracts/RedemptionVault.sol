@@ -14,6 +14,7 @@ import "./interfaces/IDataFeed.sol";
 import "./abstract/ManageableVaultRedeem.sol";
 
 import "./access/Greenlistable.sol";
+import "./libraries/DecimalsCorrectionLibrary.sol";
 
 /**
  * @title RedemptionVault
@@ -22,6 +23,7 @@ import "./access/Greenlistable.sol";
  */
 contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
     using Counters for Counters.Counter;
+    using DecimalsCorrectionLibrary for uint256;
 
     /**
      * @notice min amount for fiat requests
@@ -212,7 +214,19 @@ contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
         onlyNotSanctioned(msg.sender)
         onlyFirewallApproved
     {
+        _redeemInstantInternal(tokenOut, amountZTokenIn, minReceiveAmount);
+    }
+
+    /**
+     * @dev Internal implementation of redeemInstant to avoid stack too deep
+     */
+    function _redeemInstantInternal(
+        address tokenOut,
+        uint256 amountZTokenIn,
+        uint256 minReceiveAmount
+    ) internal {
         address user = msg.sender;
+        uint256 tokenDecimals = _tokenDecimals(tokenOut);
 
         (
             uint256 feeAmount,
@@ -221,18 +235,12 @@ contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
 
         _requireAndUpdateLimit(amountZTokenIn);
 
-        uint256 tokenDecimals = _tokenDecimals(tokenOut);
-
-        uint256 amountZTokenInCopy = amountZTokenIn;
-        address tokenOutCopy = tokenOut;
-        uint256 minReceiveAmountCopy = minReceiveAmount;
-
         (uint256 amountZTokenInUsd, uint256 zTokenRate) = _convertZTokenToUsd(
-            amountZTokenInCopy
+            amountZTokenIn
         );
-        (uint256 amountTokenOut, uint256 tokenOutRate) = _convertUsdToToken(
+        (, uint256 tokenOutRate) = _convertUsdToToken(
             amountZTokenInUsd,
-            tokenOutCopy
+            tokenOut
         );
 
         uint256 amountTokenOutWithoutFee = _truncate(
@@ -240,19 +248,21 @@ contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
             tokenDecimals
         );
 
+        uint256 amountTokenOutNative = amountTokenOutWithoutFee
+            .convertFromBase18(tokenDecimals);
         require(
-            amountTokenOutWithoutFee >= minReceiveAmountCopy,
+            amountTokenOutNative >= minReceiveAmount,
             "RV: minReceiveAmount > actual"
         );
 
-        _requireAndUpdateAllowance(tokenOutCopy, amountTokenOut);
+        _requireAndUpdateAllowance(tokenOut, amountTokenOutWithoutFee);
 
         zToken.burn(user, amountZTokenWithoutFee);
         if (feeAmount > 0)
             _tokenTransferFromUser(address(zToken), feeReceiver, feeAmount, 18);
 
         _tokenTransferToUser(
-            tokenOutCopy,
+            tokenOut,
             user,
             amountTokenOutWithoutFee,
             tokenDecimals
@@ -260,10 +270,10 @@ contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
 
         emit RedeemInstant(
             user,
-            tokenOutCopy,
-            amountZTokenInCopy,
+            tokenOut,
+            amountZTokenIn,
             feeAmount,
-            amountTokenOutWithoutFee
+            amountTokenOutNative
         );
     }
 
