@@ -36,11 +36,6 @@ export interface ZothDeploymentConfig extends BaseConfig {
      * Defaults to deployer address if not specified
      */
     requestRedeemer?: string
-    /**
-     * Hypernative Firewall contract address (required for PriceOracle)
-     * Used for transaction security validation
-     */
-    hypernativeFirewall?: string
 }
 
 export interface DeploymentResult {
