@@ -48,10 +48,6 @@ describe("Native Decimal Scaling", function () {
         const mockWBTC = await MockTokenFactory.deploy("Wrapped Bitcoin", "WBTC", 8);
         const mockDAI = await MockTokenFactory.deploy("Dai Stablecoin", "DAI", 18);
 
-        // Deploy mock firewall
-        const MockFirewallFactory = await ethers.getContractFactory("MockHypernativeFirewall");
-        const mockFirewall = await MockFirewallFactory.deploy();
-
         // Deploy FunctionsAccessControl for PriceOracle
         const FunctionsAccessControlFactory = await ethers.getContractFactory("FunctionsAccessControl");
         const functionsAccessControl = await FunctionsAccessControlFactory.deploy(
@@ -64,8 +60,7 @@ describe("Native Decimal Scaling", function () {
             await functionsAccessControl.getAddress(),
             8,  // 8 decimals for price input
             500, // 5% tolerance
-            86400, // 24 hours max staleness
-            await mockFirewall.getAddress()
+            86400 // 24 hours max staleness
         );
 
         // Deploy stablecoin oracle (for USDC - returns 1:1)
@@ -73,8 +68,7 @@ describe("Native Decimal Scaling", function () {
             await functionsAccessControl.getAddress(),
             8,
             500,
-            86400,
-            await mockFirewall.getAddress()
+            86400
         );
 
         // Grant price admin role and set prices
@@ -116,8 +110,7 @@ describe("Native Decimal Scaling", function () {
             100, // 1% variation tolerance
             ethers.parseUnits("1", 18), // min amount in base18
             0, // minZTokenAmountForFirstDeposit
-            ethers.parseUnits("10000000", 18), // maxSupplyCap
-            await mockFirewall.getAddress() // firewall
+            ethers.parseUnits("10000000", 18) // maxSupplyCap
         ]);
         const depositVaultProxy = await ERC1967ProxyFactory.deploy(
             await depositVaultImpl.getAddress(),
@@ -152,8 +145,7 @@ describe("Native Decimal Scaling", function () {
                 fiatAdditionalFee: 50,
                 fiatFlatFee: ethers.parseUnits("10", 18)
             },
-            await requestRedeemerAccount.getAddress(),
-            await mockFirewall.getAddress() // firewall
+            await requestRedeemerAccount.getAddress()
         ]);
         const redemptionVaultProxy = await ERC1967ProxyFactory.deploy(
             await redemptionVaultImpl.getAddress(),

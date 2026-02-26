@@ -73,16 +73,10 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const priceDecimals = 2  // 2 decimals for price input
     const tolerancePercent = 200  // 2% tolerance (200 basis points)
     const maxStaleness = 86400  // 24 hours in seconds (price considered stale after this)
-    const firewallAddress = config.hypernativeFirewall || ethers.ZeroAddress
-
-    if (firewallAddress === ethers.ZeroAddress) {
-        throw new Error('Hypernative firewall address is required. Please set hypernativeFirewall in config.')
-    }
 
     Logger.log('Price decimals', priceDecimals.toString(), 1)
     Logger.log('Tolerance percent', (tolerancePercent / 100).toFixed(2) + '%', 1)
     Logger.log('Max staleness', (maxStaleness / 3600).toFixed(0) + ' hours', 1)
-    Logger.log('Firewall address', firewallAddress, 1)
 
     // Deploy without proxy (simple contract)
     const [priceOracleAddress, __] = await deploymentManager.deployContract(
@@ -92,8 +86,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             functionsAccessControlAddress,  // _accessControl
             priceDecimals,                   // _priceDecimals
             tolerancePercent,                // _tolerancePercent
-            maxStaleness,                    // _maxStaleness
-            firewallAddress                  // _firewall
+            maxStaleness                     // _maxStaleness
         ]
     )
 
@@ -117,8 +110,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                     functionsAccessControlAddress,
                     priceDecimals,
                     tolerancePercent,
-                    maxStaleness,
-                    firewallAddress
+                    maxStaleness
                 ]
             })
             Logger.success('PriceOracle verified on Etherscan', undefined, 1)

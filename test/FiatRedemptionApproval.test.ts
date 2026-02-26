@@ -52,10 +52,6 @@ describe("Fiat Redemption Approval", function () {
         const MockTokenFactory = await ethers.getContractFactory("MockERC20");
         const mockUSDC = await MockTokenFactory.deploy("USD Coin", "USDC", 6);
 
-        // Deploy mock firewall
-        const MockFirewallFactory = await ethers.getContractFactory("MockHypernativeFirewall");
-        const mockFirewall = await MockFirewallFactory.deploy();
-
         // Deploy FunctionsAccessControl for PriceOracle
         const FunctionsAccessControlFactory = await ethers.getContractFactory("FunctionsAccessControl");
         const functionsAccessControl = await FunctionsAccessControlFactory.deploy(
@@ -68,8 +64,7 @@ describe("Fiat Redemption Approval", function () {
             await functionsAccessControl.getAddress(),
             8,
             500,
-            86400,
-            await mockFirewall.getAddress()
+            86400
         );
 
         // Deploy stablecoin oracle
@@ -77,8 +72,7 @@ describe("Fiat Redemption Approval", function () {
             await functionsAccessControl.getAddress(),
             8,
             500,
-            86400,
-            await mockFirewall.getAddress()
+            86400
         );
 
         // Grant price admin role and set prices
@@ -124,8 +118,7 @@ describe("Fiat Redemption Approval", function () {
                 fiatAdditionalFee: 50, // 0.5%
                 fiatFlatFee: ethers.parseUnits("10", 18)
             },
-            await requestRedeemerAccount.getAddress(),
-            await mockFirewall.getAddress()
+            await requestRedeemerAccount.getAddress()
         ]);
         const redemptionVaultProxy = await ERC1967ProxyFactory.deploy(
             await redemptionVaultImpl.getAddress(),
