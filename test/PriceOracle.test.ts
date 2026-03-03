@@ -31,7 +31,8 @@ describe("PriceOracle", function () {
         const priceOracle = await PriceOracleFactory.deploy(
             await accessControl.getAddress(),
             8, // 8 decimals for price input
-            500 // 5% tolerance (500 basis points)
+            500, // 5% tolerance (500 basis points)
+            86400 // 24 hours max staleness
         );
 
         // Grant roles
@@ -69,7 +70,7 @@ describe("PriceOracle", function () {
         it("Should revert if decimals exceed 18", async function () {
             const PriceOracleFactory = await ethers.getContractFactory("PriceOracle");
             await expect(
-                PriceOracleFactory.deploy(await accessControl.getAddress(), 19, 500)
+                PriceOracleFactory.deploy(await accessControl.getAddress(), 19, 500, 86400)
             ).to.be.revertedWith("Decimals too high");
         });
 
@@ -79,7 +80,8 @@ describe("PriceOracle", function () {
                 PriceOracleFactory.deploy(
                     await accessControl.getAddress(),
                     8,
-                    10001
+                    10001,
+                    86400
                 )
             ).to.be.revertedWith("Tolerance cannot exceed 100%");
         });
@@ -89,7 +91,8 @@ describe("PriceOracle", function () {
             const oracle = await PriceOracleFactory.deploy(
                 await accessControl.getAddress(),
                 8,
-                10000
+                10000,
+                86400
             );
             expect(await oracle.tolerancePercent()).to.equal(10000);
         });

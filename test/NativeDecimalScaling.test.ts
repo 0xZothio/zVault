@@ -5,7 +5,7 @@ import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
 import type {
     DepositVault,
     RedemptionVault,
-    ZeUSD
+    ZOPAL
 } from "../typechain-types";
 
 describe("Native Decimal Scaling", function () {
@@ -16,7 +16,7 @@ describe("Native Decimal Scaling", function () {
 
     let depositVault: DepositVault;
     let redemptionVault: RedemptionVault;
-    let zToken: ZeUSD;
+    let zToken: ZOPAL;
 
     let owner: SignerWithAddress;
     let user: SignerWithAddress;
@@ -76,9 +76,9 @@ describe("Native Decimal Scaling", function () {
         await priceOracle.setPrice(ethers.parseUnits("1", 8)); // $1 per zToken
         await stablecoinOracle.setPrice(ethers.parseUnits("1", 8)); // $1 per stablecoin
 
-        // Deploy ZeUSD token
-        const ZeUSDFactory = await ethers.getContractFactory("ZeUSD");
-        const zTokenImpl = await ZeUSDFactory.deploy();
+        // Deploy zOPAL token
+        const zOPALFactory = await ethers.getContractFactory("zOPAL");
+        const zTokenImpl = await zOPALFactory.deploy();
         const zTokenInitData = zTokenImpl.interface.encodeFunctionData("initialize", [
             await accessControl.getAddress(),
             ethers.ZeroAddress
@@ -87,7 +87,7 @@ describe("Native Decimal Scaling", function () {
             await zTokenImpl.getAddress(),
             zTokenInitData
         );
-        const zToken = ZeUSDFactory.attach(await zTokenProxy.getAddress()) as unknown as ZeUSD;
+        const zToken = zOPALFactory.attach(await zTokenProxy.getAddress()) as unknown as ZOPAL;
 
         // Deploy DepositVault
         const DepositVaultFactory = await ethers.getContractFactory("DepositVault");
@@ -158,14 +158,14 @@ describe("Native Decimal Scaling", function () {
         // Grant roles
         const DEPOSIT_VAULT_ADMIN_ROLE = await accessControl.DEPOSIT_VAULT_ADMIN_ROLE();
         const REDEMPTION_VAULT_ADMIN_ROLE = await accessControl.REDEMPTION_VAULT_ADMIN_ROLE();
-        const ZEUSD_MINT_OPERATOR_ROLE = await accessControl.ZEUSD_MINT_OPERATOR_ROLE();
-        const ZEUSD_BURN_OPERATOR_ROLE = await accessControl.ZEUSD_BURN_OPERATOR_ROLE();
+        const ZOPAL_MINT_OPERATOR_ROLE = await accessControl.ZOPAL_MINT_OPERATOR_ROLE();
+        const ZOPAL_BURN_OPERATOR_ROLE = await accessControl.ZOPAL_BURN_OPERATOR_ROLE();
         const GREENLISTED_ROLE = await accessControl.GREENLISTED_ROLE();
 
         await accessControl.grantRole(DEPOSIT_VAULT_ADMIN_ROLE, await deployer.getAddress());
         await accessControl.grantRole(REDEMPTION_VAULT_ADMIN_ROLE, await deployer.getAddress());
-        await accessControl.grantRole(ZEUSD_MINT_OPERATOR_ROLE, await depositVault.getAddress());
-        await accessControl.grantRole(ZEUSD_BURN_OPERATOR_ROLE, await redemptionVault.getAddress());
+        await accessControl.grantRole(ZOPAL_MINT_OPERATOR_ROLE, await depositVault.getAddress());
+        await accessControl.grantRole(ZOPAL_BURN_OPERATOR_ROLE, await redemptionVault.getAddress());
         await accessControl.grantRole(GREENLISTED_ROLE, await userAccount.getAddress());
 
         // Add payment tokens to vaults

@@ -20,22 +20,22 @@ abstract contract ZothAccessControlRoles {
         keccak256("BLACKLIST_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can mint ZeUSD
+     * @notice actor that can mint zOPAL
      */
-    bytes32 public constant ZEUSD_MINT_OPERATOR_ROLE =
-        keccak256("ZEUSD_MINT_OPERATOR_ROLE");
+    bytes32 public constant ZOPAL_MINT_OPERATOR_ROLE =
+        keccak256("ZOPAL_MINT_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can burn ZeUSD
+     * @notice actor that can burn zOPAL
      */
-    bytes32 public constant ZEUSD_BURN_OPERATOR_ROLE =
-        keccak256("ZEUSD_BURN_OPERATOR_ROLE");
+    bytes32 public constant ZOPAL_BURN_OPERATOR_ROLE =
+        keccak256("ZOPAL_BURN_OPERATOR_ROLE");
 
     /**
-     * @notice actor that can pause ZeUSD
+     * @notice actor that can pause zOPAL
      */
-    bytes32 public constant ZEUSD_PAUSE_OPERATOR_ROLE =
-        keccak256("ZEUSD_PAUSE_OPERATOR_ROLE");
+    bytes32 public constant ZOPAL_PAUSE_OPERATOR_ROLE =
+        keccak256("ZOPAL_PAUSE_OPERATOR_ROLE");
 
     /**
      * @notice actor that have admin rights in deposit vault
