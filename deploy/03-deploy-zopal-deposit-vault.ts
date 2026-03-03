@@ -16,27 +16,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Get required contract addresses
     const accessControlAddress = config.contractAddresses['ZothAccessControl']
-    const zeUSDAddress = config.contractAddresses['ZeUSD']
+    const zOPALAddress = config.contractAddresses['zOPAL']
     const dataFeedAddress = config.contractAddresses['PriceOracle']
 
-    if (!accessControlAddress || !zeUSDAddress || !dataFeedAddress) {
+    if (!accessControlAddress || !zOPALAddress || !dataFeedAddress) {
         throw new Error(
             'Required contracts not deployed:\n' +
             `  - ZothAccessControl: ${accessControlAddress || 'MISSING'}\n` +
-            `  - ZeUSD: ${zeUSDAddress || 'MISSING'}\n` +
+            `  - zOPAL: ${zOPALAddress || 'MISSING'}\n` +
             `  - PriceOracle: ${dataFeedAddress || 'MISSING'}`
         )
     }
 
     Logger.log('ZothAccessControl', accessControlAddress, 1)
-    Logger.log('ZeUSD', zeUSDAddress, 1)
+    Logger.log('zOPAL', zOPALAddress, 1)
     Logger.log('PriceOracle', dataFeedAddress, 1)
 
     // Configuration parameters
     const [deployer] = await ethers.getSigners()
 
     const zTokenInitParams = {
-        zToken: zeUSDAddress,
+        zToken: zOPALAddress,
         zTokenDataFeed: dataFeedAddress,
     }
 
@@ -67,7 +67,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('Max Supply Cap', ethers.formatEther(maxSupplyCap), 2)
 
     // Get the contract factory
-    const ZeUSDDepositVault = await ethers.getContractFactory('ZeUSDDepositVault')
+    const zOPALDepositVault = await ethers.getContractFactory('zOPALDepositVault')
 
     // Prepare initialization parameters
     const initParams = [
@@ -83,51 +83,34 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     ]
 
     // Encode initializer
-    const initData = ZeUSDDepositVault.interface.encodeFunctionData(
+    const initData = zOPALDepositVault.interface.encodeFunctionData(
         'initialize',
         initParams
     )
 
     // Deploy the contract
     const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
-        'ZeUSDDepositVault',
-        ZeUSDDepositVault,
+        'zOPALDepositVault',
+        zOPALDepositVault,
         [],
         initData
     )
 
-    // Grant necessary roles
-    Logger.log('Setting up roles...', undefined, 1)
-    const ZothAccessControl = await ethers.getContractAt(
-        'ZothAccessControl',
-        accessControlAddress
-    )
+    // Grant mint role to vault (essential for vault to function)
+    const ZothAccessControl = await ethers.getContractAt('ZothAccessControl', accessControlAddress)
+    const ZOPAL_MINT_OPERATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ZOPAL_MINT_OPERATOR_ROLE'))
 
-    const ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE')
-    )
-    const ZEUSD_MINT_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('ZEUSD_MINT_OPERATOR_ROLE')
-    )
-
-    // Grant vault admin role to deployer
-    let tx = await ZothAccessControl.grantRole(
-        ZEUSD_DEPOSIT_VAULT_ADMIN_ROLE,
-        deployer.address
-    )
-    await tx.wait()
-    Logger.success('Vault admin role granted to deployer', undefined, 2)
-
-    // Grant mint role to vault
-    tx = await ZothAccessControl.grantRole(
-        ZEUSD_MINT_OPERATOR_ROLE,
-        proxyAddress
-    )
-    await tx.wait()
-    Logger.success('Mint role granted to vault', undefined, 2)
+    const vaultHasMintRole = await ZothAccessControl.hasRole(ZOPAL_MINT_OPERATOR_ROLE, proxyAddress)
+    if (!vaultHasMintRole) {
+        const tx = await ZothAccessControl.grantRole(ZOPAL_MINT_OPERATOR_ROLE, proxyAddress)
+        await tx.wait()
+        Logger.success('MINT_OPERATOR_ROLE granted to vault', undefined, 1)
+    } else {
+        Logger.info('Vault already has MINT_OPERATOR_ROLE', undefined, 1)
+    }
 
     // Verify deployment
-    const vault = ZeUSDDepositVault.attach(proxyAddress)
+    const vault = await ethers.getContractAt('zOPALDepositVault', proxyAddress)
     const vaultAccessControl = await vault.accessControl()
     const vaultZToken = await vault.zToken()
     const vaultMinAmount = await vault.minAmount()
@@ -135,25 +118,25 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     Logger.log('Verification:', '', 1)
     Logger.log('Access Control matches', (vaultAccessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 2)
-    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zeUSDAddress.toLowerCase()).toString(), 2)
+    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zOPALAddress.toLowerCase()).toString(), 2)
     Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
     Logger.log('Max Supply Cap', ethers.formatEther(vaultMaxSupplyCap), 2)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(
-        'ZeUSDDepositVault',
+        'zOPALDepositVault',
         [implementationAddress, proxyAddress],
         [],
         initData
     )
-    await deploymentManager.verifyOnTenderly('ZeUSDDepositVault', [implementationAddress, proxyAddress])
+    await deploymentManager.verifyOnTenderly('zOPALDepositVault', [implementationAddress, proxyAddress])
 
-    Logger.deploymentSuccess('ZeUSDDepositVault', proxyAddress)
+    Logger.deploymentSuccess('zOPALDepositVault', proxyAddress)
 
     return true
 }
 
 export default func
-func.tags = ['ZeUSDDepositVault']
-func.id = 'deploy_zeusd_deposit_vault'
-func.dependencies = ['ZothAccessControl', 'ZeUSD', 'PriceOracle']
+func.tags = ['zOPALDepositVault']
+func.id = 'deploy_zopal_deposit_vault'
+func.dependencies = ['ZothAccessControl', 'zOPAL', 'PriceOracle']

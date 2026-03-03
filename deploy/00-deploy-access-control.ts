@@ -11,6 +11,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const deploymentManager = new DeploymentManager(network.name, hre);
     await deploymentManager.initialize();
 
+    // Get config from manager
+    const config = await deploymentManager.getConfig()
+
     // Get the contract factory
     const ZothAccessControl = await ethers.getContractFactory('ZothAccessControl')
 
@@ -29,21 +32,14 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     )
 
     // Verify deployment
-    const accessControl = ZothAccessControl.attach(proxyAddress)
+    const accessControl = await ethers.getContractAt('ZothAccessControl', proxyAddress)
     const [deployer] = await ethers.getSigners()
 
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash
+
+    // Check deployer roles (granted by initialize)
     const hasAdminRole = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)
     Logger.log('Deployer has DEFAULT_ADMIN_ROLE', hasAdminRole.toString(), 1)
-
-    const DEPOSIT_VAULT_ADMIN_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('DEPOSIT_VAULT_ADMIN_ROLE')
-    )
-    const hasDepositAdmin = await accessControl.hasRole(
-        DEPOSIT_VAULT_ADMIN_ROLE,
-        deployer.address
-    )
-    Logger.log('Deployer has DEPOSIT_VAULT_ADMIN_ROLE', hasDepositAdmin.toString(), 1)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(
