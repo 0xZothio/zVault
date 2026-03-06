@@ -7,7 +7,7 @@ export class Spinner {
     static start(message: string) {
         this.message = message
         this.frameIndex = 0
-        
+
         // Clear any existing spinner
         if (this.interval) {
             clearInterval(this.interval)
@@ -15,7 +15,7 @@ export class Spinner {
 
         // Start the spinner
         process.stdout.write(`  ${this.frames[0]} ${message}`)
-        
+
         this.interval = setInterval(() => {
             this.frameIndex = (this.frameIndex + 1) % this.frames.length
             process.stdout.clearLine?.(0)
@@ -29,10 +29,10 @@ export class Spinner {
             clearInterval(this.interval)
             this.interval = null
         }
-        
+
         process.stdout.clearLine?.(0)
         process.stdout.cursorTo?.(0)
-        
+
         const icon = success ? '✓' : '✗'
         const msg = finalMessage || this.message
         console.log(`  ${icon}  ${msg}`)

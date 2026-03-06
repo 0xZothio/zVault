@@ -161,7 +161,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 await grantRoleIfNeeded(accessControl, DEFAULT_ADMIN_ROLE, roles.defaultAdmin, 'DEFAULT_ADMIN')
 
                 Logger.section('Revoking Deployer Roles')
-                
+
                 await revokeRoleIfNeeded(accessControl, ZOPAL_MINT_OPERATOR_ROLE, deployer.address, 'ZOPAL_MINT_OPERATOR')
                 await revokeRoleIfNeeded(accessControl, ZOPAL_BURN_OPERATOR_ROLE, deployer.address, 'ZOPAL_BURN_OPERATOR')
                 await revokeRoleIfNeeded(accessControl, ZOPAL_PAUSE_OPERATOR_ROLE, deployer.address, 'ZOPAL_PAUSE_OPERATOR')
@@ -176,7 +176,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 Logger.section('Verification')
                 const deployerStillAdmin = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)
                 const newAdminHasRole = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, roles.defaultAdmin)
-                
+
                 if (!deployerStillAdmin) {
                     Logger.success('Deployer no longer has DEFAULT_ADMIN_ROLE')
                 } else {

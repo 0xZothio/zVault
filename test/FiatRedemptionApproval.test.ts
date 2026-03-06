@@ -267,7 +267,7 @@ describe("Fiat Redemption Approval", function () {
             await redemptionVault.connect(owner).approveRequest(requestId, newZTokenRate);
 
             const vaultBalanceAfter = await zToken.balanceOf(await redemptionVault.getAddress());
-            
+
             // zTokens should be burned
             expect(vaultBalanceAfter).to.be.lessThan(vaultBalanceBefore);
         });
@@ -341,7 +341,7 @@ describe("Fiat Redemption Approval", function () {
 
             // Create fiat request
             await redemptionVault.connect(user).redeemFiatRequest(redeemAmount);
-            
+
             const userBalanceAfterRequest = await zToken.balanceOf(await user.getAddress());
             expect(userBalanceAfterRequest).to.equal(userBalanceBefore - redeemAmount);
 
@@ -352,7 +352,7 @@ describe("Fiat Redemption Approval", function () {
 
             const userBalanceAfterReject = await zToken.balanceOf(await user.getAddress());
             const vaultBalanceAfterReject = await zToken.balanceOf(await redemptionVault.getAddress());
-            
+
             // User balance unchanged after rejection - tokens remain in vault
             expect(userBalanceAfterReject).to.equal(userBalanceAfterRequest);
             // Vault still holds the tokens
