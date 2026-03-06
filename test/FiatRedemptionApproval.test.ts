@@ -4,7 +4,7 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import type {
     RedemptionVault,
-    ZeUSD
+    ZOPAL
 } from "../typechain-types";
 
 /**
@@ -20,7 +20,7 @@ import type {
 describe("Fiat Redemption Approval", function () {
     let mockUSDC: any;
     let redemptionVault: RedemptionVault;
-    let zToken: ZeUSD;
+    let zToken: ZOPAL;
 
     let owner: SignerWithAddress;
     let user: SignerWithAddress;
@@ -80,9 +80,9 @@ describe("Fiat Redemption Approval", function () {
         await priceOracle.setPrice(ethers.parseUnits("1", 8));
         await stablecoinOracle.setPrice(ethers.parseUnits("1", 8));
 
-        // Deploy ZeUSD token
-        const ZeUSDFactory = await ethers.getContractFactory("ZeUSD");
-        const zTokenImpl = await ZeUSDFactory.deploy();
+        // Deploy zOPAL token
+        const zOPALFactory = await ethers.getContractFactory("zOPAL");
+        const zTokenImpl = await zOPALFactory.deploy();
         const zTokenInitData = zTokenImpl.interface.encodeFunctionData("initialize", [
             await accessControl.getAddress(),
             ethers.ZeroAddress
@@ -91,7 +91,7 @@ describe("Fiat Redemption Approval", function () {
             await zTokenImpl.getAddress(),
             zTokenInitData
         );
-        const zToken = ZeUSDFactory.attach(await zTokenProxy.getAddress()) as unknown as ZeUSD;
+        const zToken = zOPALFactory.attach(await zTokenProxy.getAddress()) as unknown as ZOPAL;
 
         // Deploy RedemptionVault
         const RedemptionVaultFactory = await ethers.getContractFactory("RedemptionVault");
@@ -130,13 +130,13 @@ describe("Fiat Redemption Approval", function () {
 
         // Grant roles
         const REDEMPTION_VAULT_ADMIN_ROLE = await accessControl.REDEMPTION_VAULT_ADMIN_ROLE();
-        const ZEUSD_BURN_OPERATOR_ROLE = await accessControl.ZEUSD_BURN_OPERATOR_ROLE();
-        const ZEUSD_MINT_OPERATOR_ROLE = await accessControl.ZEUSD_MINT_OPERATOR_ROLE();
+        const ZOPAL_BURN_OPERATOR_ROLE = await accessControl.ZOPAL_BURN_OPERATOR_ROLE();
+        const ZOPAL_MINT_OPERATOR_ROLE = await accessControl.ZOPAL_MINT_OPERATOR_ROLE();
         const GREENLISTED_ROLE = await accessControl.GREENLISTED_ROLE();
 
         await accessControl.grantRole(REDEMPTION_VAULT_ADMIN_ROLE, await deployer.getAddress());
-        await accessControl.grantRole(ZEUSD_BURN_OPERATOR_ROLE, await redemptionVault.getAddress());
-        await accessControl.grantRole(ZEUSD_MINT_OPERATOR_ROLE, await deployer.getAddress());
+        await accessControl.grantRole(ZOPAL_BURN_OPERATOR_ROLE, await redemptionVault.getAddress());
+        await accessControl.grantRole(ZOPAL_MINT_OPERATOR_ROLE, await deployer.getAddress());
         await accessControl.grantRole(GREENLISTED_ROLE, await userAccount.getAddress());
 
         // Add USDC as payment token to redemption vault
@@ -267,7 +267,7 @@ describe("Fiat Redemption Approval", function () {
             await redemptionVault.connect(owner).approveRequest(requestId, newZTokenRate);
 
             const vaultBalanceAfter = await zToken.balanceOf(await redemptionVault.getAddress());
-            
+
             // zTokens should be burned
             expect(vaultBalanceAfter).to.be.lessThan(vaultBalanceBefore);
         });
@@ -341,7 +341,7 @@ describe("Fiat Redemption Approval", function () {
 
             // Create fiat request
             await redemptionVault.connect(user).redeemFiatRequest(redeemAmount);
-            
+
             const userBalanceAfterRequest = await zToken.balanceOf(await user.getAddress());
             expect(userBalanceAfterRequest).to.equal(userBalanceBefore - redeemAmount);
 
@@ -352,7 +352,7 @@ describe("Fiat Redemption Approval", function () {
 
             const userBalanceAfterReject = await zToken.balanceOf(await user.getAddress());
             const vaultBalanceAfterReject = await zToken.balanceOf(await redemptionVault.getAddress());
-            
+
             // User balance unchanged after rejection - tokens remain in vault
             expect(userBalanceAfterReject).to.equal(userBalanceAfterRequest);
             // Vault still holds the tokens

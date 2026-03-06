@@ -1,6 +1,6 @@
 # zVault Protocol
 
-A tokenized vault system for the ZeUSD token, enabling users to deposit stablecoins and receive ZeUSD tokens, as well as redeem ZeUSD tokens back for underlying assets.
+A tokenized vault system for the zOPAL token, enabling users to deposit stablecoins and receive zOPAL tokens, as well as redeem zOPAL tokens back for underlying assets.
 
 ## Table of Contents
 
@@ -20,8 +20,8 @@ A tokenized vault system for the ZeUSD token, enabling users to deposit stableco
 
 zVault is a DeFi protocol that provides:
 
-- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive ZeUSD tokens
-- **Redemption Functionality**: Users burn ZeUSD tokens to receive underlying stablecoins
+- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive zOPAL tokens
+- **Redemption Functionality**: Users burn zOPAL tokens to receive underlying stablecoins
 - **Price Oracle**: Configurable price feed with tolerance checks for fair pricing
 - **Access Control**: Role-based permission system for secure operations
 - **Greenlist/Blacklist**: KYC/AML compliance through address filtering
@@ -54,7 +54,7 @@ zVault is a DeFi protocol that provides:
 │            │                                         │                   │
 │            ▼                                         ▼                   │
 │   ┌─────────────────┐         ┌─────────────────────────────────┐       │
-│   │   ZeUSD Token   │◄────────│         PriceOracle             │       │
+│   │   zOPAL Token   │◄────────│         PriceOracle             │       │
 │   │  (ERC20+Pause)  │         │  (Tolerance + Decimal Convert)  │       │
 │   └────────┬────────┘         └─────────────────────────────────┘       │
 │            │                              ▲           ▲                  │
@@ -63,8 +63,8 @@ zVault is a DeFi protocol that provides:
 │   │                             │                               │       │
 │   ▼                             ▼                               ▼       │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────────┐  │
-│  │  DepositVault   │    │ RedemptionVault │    │ ZeUSDDepositVault   │  │
-│  │  (Base Logic)   │    │  (Burn Logic)   │    │ (ZeUSD-specific)    │  │
+│  │  DepositVault   │    │ RedemptionVault │    │ zOPALDepositVault   │  │
+│  │  (Base Logic)   │    │  (Burn Logic)   │    │ (zOPAL-specific)    │  │
 │  └─────────────────┘    └─────────────────┘    └─────────────────────┘  │
 │           ▲                      ▲                                       │
 │           │                      │                                       │
@@ -92,16 +92,16 @@ zVault is a DeFi protocol that provides:
 
 | Contract | Description | Location |
 |----------|-------------|----------|
-| `DepositVault.sol` | Handles deposits and mints ZeUSD tokens | `contracts/DepositVault.sol` |
-| `RedemptionVault.sol` | Handles redemptions and burns ZeUSD tokens | `contracts/RedemptionVault.sol` |
+| `DepositVault.sol` | Handles deposits and mints zOPAL tokens | `contracts/DepositVault.sol` |
+| `RedemptionVault.sol` | Handles redemptions and burns zOPAL tokens | `contracts/RedemptionVault.sol` |
 | `PriceOracle.sol` | Price feed with tolerance checks and decimal conversion | `contracts/PriceOracle.sol` |
 
 ### Token Contracts
 
 | Contract | Description | Location |
 |----------|-------------|----------|
-| `ZeUSD.sol` | ERC20 token with mint, burn, pause, and blacklist | `contracts/ZeUSD/ZeUSD.sol` |
-| `ZeUSDDepositVault.sol` | ZeUSD-specific deposit vault | `contracts/ZeUSD/ZeUSDDepositVault.sol` |
+| `zOPAL.sol` | ERC20 token with mint, burn, pause, and blacklist | `contracts/zOPAL/zOPAL.sol` |
+| `zOPALDepositVault.sol` | zOPAL-specific deposit vault | `contracts/zOPAL/zOPALDepositVault.sol` |
 
 ### Access Control
 
@@ -135,7 +135,7 @@ zVault is a DeFi protocol that provides:
 | `IDepositVault.sol` | Deposit vault interface |
 | `IRedemptionVault.sol` | Redemption vault interface |
 | `IManageableVault.sol` | Base vault interface |
-| `IZToken.sol` | ZeUSD token interface |
+| `IZToken.sol` | zOPAL token interface |
 | `IDataFeed.sol` | Price feed interface |
 | `IVaultShared.sol` | Shared types and events |
 
@@ -257,10 +257,10 @@ Scripts are located in the `deploy/` directory and execute in order:
 | Order | Script | Tag | Description |
 |-------|--------|-----|-------------|
 | 00 | `00-deploy-access-control.ts` | `ZothAccessControl` | Deploys access control contract |
-| 01 | `01-deploy-zeusd-token.ts` | `ZeUSD` | Deploys ZeUSD token |
+| 01 | `01-deploy-zopal-token.ts` | `zOPAL` | Deploys zOPAL token |
 | 02 | `02-deploy-price-oracle.ts` | `PriceOracle` | Deploys price oracle |
-| 03 | `03-deploy-zeusd-deposit-vault.ts` | `ZeUSDDepositVault` | Deploys deposit vault |
-| 04 | `04-deploy-zeusd-redemption-vault.ts` | `RedemptionVault` | Deploys redemption vault |
+| 03 | `03-deploy-zopal-deposit-vault.ts` | `zOPALDepositVault` | Deploys deposit vault |
+| 04 | `04-deploy-zopal-redemption-vault.ts` | `RedemptionVault` | Deploys redemption vault |
 | 05 | `05-deploy-all.ts` | `Complete` | Orchestrates full deployment |
 
 ### NPM Scripts
@@ -277,9 +277,9 @@ pnpm deploy:mainnet
 
 # Deploy specific contracts
 pnpm deploy:access-control   # Only ZothAccessControl
-pnpm deploy:zeusd           # Only ZeUSD token
+pnpm deploy:zopal           # Only zOPAL token
 pnpm deploy:oracle          # Only PriceOracle
-pnpm deploy:deposit-vault   # Only ZeUSDDepositVault
+pnpm deploy:deposit-vault   # Only zOPALDepositVault
 pnpm deploy:redemption-vault # Only RedemptionVault
 pnpm deploy:all             # Full deployment with orchestration
 
@@ -296,13 +296,13 @@ pnpm clean
 ZothAccessControl
        │
        ▼
-     ZeUSD ─────────────────┐
+     zOPAL ─────────────────┐
        │                    │
        ▼                    │
   PriceOracle ──────────────┤
        │                    │
        ▼                    ▼
-ZeUSDDepositVault     RedemptionVault
+zOPALDepositVault     RedemptionVault
 ```
 
 ---
@@ -320,9 +320,9 @@ Create `config/deployment.json` based on `config/deployment.example.json`:
     "chainId": 80002
   },
   "contracts": {
-    "ZeUSD": {
-      "name": "ZeUSD",
-      "symbol": "ZeUSD"
+    "zOPAL": {
+      "name": "zOPAL",
+      "symbol": "zOPAL"
     },
     "priceOracle": {
       "initialPrice": "100000000",
@@ -356,9 +356,9 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 | `REDEMPTION_VAULT_ADMIN_ROLE` | Admin of redemption vault operations |
 | `GREENLIST_OPERATOR_ROLE` | Can add/remove from greenlist |
 | `BLACKLIST_OPERATOR_ROLE` | Can add/remove from blacklist |
-| `ZEUSD_MINT_OPERATOR_ROLE` | Can mint ZeUSD tokens |
-| `ZEUSD_BURN_OPERATOR_ROLE` | Can burn ZeUSD tokens |
-| `ZEUSD_PAUSE_OPERATOR_ROLE` | Can pause/unpause ZeUSD token |
+| `ZOPAL_MINT_OPERATOR_ROLE` | Can mint zOPAL tokens |
+| `ZOPAL_BURN_OPERATOR_ROLE` | Can burn zOPAL tokens |
+| `ZOPAL_PAUSE_OPERATOR_ROLE` | Can pause/unpause zOPAL token |
 
 ### FunctionsAccessControl Roles
 
@@ -369,13 +369,13 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 | `CONFIG_ROLE` | Can configure oracle parameters |
 | `PRICE_ADMIN_ROLE` | Can update prices |
 
-### ZeUSD Roles
+### zOPAL Roles
 
 | Role | Description |
 |------|-------------|
-| `ZEUSD_MINT_OPERATOR_ROLE` | Can mint ZeUSD |
-| `ZEUSD_BURN_OPERATOR_ROLE` | Can burn ZeUSD |
-| `ZEUSD_PAUSE_OPERATOR_ROLE` | Can pause/unpause ZeUSD |
+| `ZOPAL_MINT_OPERATOR_ROLE` | Can mint zOPAL |
+| `ZOPAL_BURN_OPERATOR_ROLE` | Can burn zOPAL |
+| `ZOPAL_PAUSE_OPERATOR_ROLE` | Can pause/unpause zOPAL |
 
 ---
 
@@ -418,7 +418,7 @@ zVault/
 │   ├── interfaces/        # Contract interfaces
 │   ├── libraries/         # Utility libraries
 │   ├── utils/            # Utility contracts (proxy)
-│   ├── ZeUSD/            # ZeUSD-specific contracts
+│   ├── zOPAL/            # zOPAL-specific contracts
 │   ├── DepositVault.sol
 │   ├── RedemptionVault.sol
 │   └── PriceOracle.sol

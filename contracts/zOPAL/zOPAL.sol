@@ -8,12 +8,12 @@ import "../abstract/WithSanctionsList.sol";
 import "../interfaces/IZToken.sol";
 
 /**
- * @title ZeUSD
- * @notice ZeUSD token with blacklist and sanctions list enforcement on transfers
+ * @title zOPAL
+ * @notice zOPAL token with blacklist and sanctions list enforcement on transfers
  * @dev Prevents sanctioned users from transferring tokens to bypass redemption blocks
  * @author RedDuck Software
  */
-contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZToken {
+contract zOPAL is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZToken {
     /**
      * @notice metadata key => metadata value
      */
@@ -35,7 +35,7 @@ contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZ
     ) external virtual initializer {
         __Blacklistable_init(_accessControl);
         __WithSanctionsList_init_unchained(_sanctionsList);
-        __ERC20_init("ZeUSD", "ZeUSD");
+        __ERC20_init("zOPAL", "zOPAL");
     }
 
     /**
@@ -116,7 +116,7 @@ contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZ
         if (_sanctionsList != address(0)) {
             require(
                 !ISanctionsList(_sanctionsList).isSanctioned(account),
-                "ZeUSD: sanctioned"
+                "zOPAL: sanctioned"
             );
         }
     }
@@ -142,23 +142,23 @@ contract ZeUSD is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZ
     }
 
     /**
-     * @dev AC role, owner of which can mint ZeUSD token
+     * @dev AC role, owner of which can mint zOPAL token
      */
     function _minterRole() internal pure virtual returns (bytes32) {
-        return ZEUSD_MINT_OPERATOR_ROLE;
+        return ZOPAL_MINT_OPERATOR_ROLE;
     }
 
     /**
-     * @dev AC role, owner of which can burn ZeUSD token
+     * @dev AC role, owner of which can burn zOPAL token
      */
     function _burnerRole() internal pure virtual returns (bytes32) {
-        return ZEUSD_BURN_OPERATOR_ROLE;
+        return ZOPAL_BURN_OPERATOR_ROLE;
     }
 
     /**
-     * @dev AC role, owner of which can pause ZeUSD token
+     * @dev AC role, owner of which can pause zOPAL token
      */
     function _pauserRole() internal pure virtual returns (bytes32) {
-        return ZEUSD_PAUSE_OPERATOR_ROLE;
+        return ZOPAL_PAUSE_OPERATOR_ROLE;
     }
 }

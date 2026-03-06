@@ -8,6 +8,45 @@ export interface ContractAddresses {
 }
 
 /**
+ * Role assignment configuration
+ * If not specified, roles default to deployer address
+ */
+export interface RoleAssignments {
+    /**
+     * Address to receive DEFAULT_ADMIN_ROLE (should be multisig for mainnet)
+     */
+    defaultAdmin?: string
+    /**
+     * Address to receive ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE
+     */
+    depositVaultAdmin?: string
+    /**
+     * Address to receive REDEMPTION_VAULT_ADMIN_ROLE
+     */
+    redemptionVaultAdmin?: string
+    /**
+     * Address to receive ZOPAL_PAUSE_OPERATOR_ROLE
+     */
+    pauseOperator?: string
+    /**
+     * Address to receive GREENLIST_OPERATOR_ROLE
+     */
+    greenlistOperator?: string
+    /**
+     * Address to receive BLACKLIST_OPERATOR_ROLE
+     */
+    blacklistOperator?: string
+    /**
+     * Address to receive PRICE_ADMIN_ROLE
+     */
+    priceAdmin?: string
+    /**
+     * Address to receive CONFIG_ROLE (PriceOracle)
+     */
+    configRole?: string
+}
+
+/**
  * Configuration for zVault protocol deployments
  */
 export interface ZothDeploymentConfig extends BaseConfig {
@@ -36,6 +75,17 @@ export interface ZothDeploymentConfig extends BaseConfig {
      * Defaults to deployer address if not specified
      */
     requestRedeemer?: string
+    /**
+     * Role assignments - specify who should receive each role
+     * If not specified, defaults to deployer (for testnet convenience)
+     * For mainnet, these should be explicitly set to multisig addresses
+     */
+    roles?: RoleAssignments
+    /**
+     * If true, skip granting token operator roles (mint/burn/pause) to deployer
+     * Use this for mainnet where deployer should never have these roles
+     */
+    skipDeployerTokenRoles?: boolean
 }
 
 export interface DeploymentResult {

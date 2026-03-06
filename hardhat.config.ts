@@ -35,7 +35,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: { allowUnlimitedContractSize: true },
 
-    mainnet: {
+    polygon: {
       chainId: 137,
       url: "https://polygon-mainnet.g.alchemy.com/v2/2IKaKbipheAk3qec3VSgM",
       accounts: ACCOUNTS,
@@ -44,6 +44,18 @@ const config: HardhatUserConfig = {
     amoy: {
       chainId: 80002,
       url: "https://rpc-amoy.polygon.technology",
+      accounts: ACCOUNTS,
+    },
+
+    base: {
+      chainId: 8453,
+      url: process.env.BASE_RPC_URL,
+      accounts: ACCOUNTS,
+    },
+
+    baseSepolia: {
+      chainId: 84532,
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
       accounts: ACCOUNTS,
     },
 
@@ -58,6 +70,14 @@ const config: HardhatUserConfig = {
     apiKey: process.env.POLYGONSCAN_API_KEY,
     customChains: [
       {
+        network: "polygon",
+        chainId: 137,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=137",
+          browserURL: "https://polygonscan.com",
+        },
+      },
+      {
         network: "amoy",
         chainId: 80002,
         urls: {
@@ -66,11 +86,19 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: "polygon",
-        chainId: 137,
+        network: "base",
+        chainId: 8453,
         urls: {
-          apiURL: "https://api.polygonscan.com/api",
-          browserURL: "https://polygonscan.com",
+          apiURL: "https://api.etherscan.io/v2/api?chainid=8453",
+          browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "baseSepolia",
+        chainId: 84532,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api?chainid=84532",
+          browserURL: "https://sepolia.basescan.org",
         },
       },
     ],

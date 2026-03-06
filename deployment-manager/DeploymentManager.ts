@@ -2,7 +2,7 @@ import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ConfigService } from '../services/ConfigService';
 import { ZothDeploymentConfig } from '../utils/types';
-import { Logger } from '../utils/logger';
+import { Logger, Spinner } from '../utils/logger';
 
 export class DeploymentManager {
     private readonly network: string;
@@ -41,30 +41,28 @@ export class DeploymentManager {
             Logger.deploymentStart(name);
 
             // Deploy implementation
-            // For upgradeable contracts (with initializerData), deploy with empty constructor
-            // For non-upgradeable contracts (no initializerData), pass constructor args
+            Spinner.start(`Deploying ${name} implementation...`);
             const implementation = initializerData
-                ? await factory.deploy()           // Upgradeable: empty constructor
-                : await factory.deploy(...args);   // Non-upgradeable: pass constructor args
+                ? await factory.deploy()
+                : await factory.deploy(...args);
 
             if (this.network !== 'virtual_mainnet') {
                 await implementation.waitForDeployment();
             }
             const implementationAddress = await implementation.getAddress();
-            Logger.log(`Implementation deployed`, implementationAddress, 1);
+            Spinner.stop(true, `Implementation deployed: ${implementationAddress}`);
 
             let proxyAddress: string;
             if (initializerData) {
-                // Deploy proxy if initializer data is provided (upgradeable pattern)
+                Spinner.start(`Deploying ${name} proxy...`);
                 const ERC1967Proxy = await this.hre.ethers.getContractFactory('ERC1967Proxy');
                 const proxy = await ERC1967Proxy.deploy(implementationAddress, initializerData);
                 if (this.network !== 'virtual_mainnet') {
                     await proxy.waitForDeployment();
                 }
                 proxyAddress = await proxy.getAddress();
-                Logger.log(`Proxy deployed`, proxyAddress, 1);
+                Spinner.stop(true, `Proxy deployed: ${proxyAddress}`);
             } else {
-                // No proxy, direct deployment (non-upgradeable pattern)
                 proxyAddress = implementationAddress;
             }
 
@@ -187,34 +185,41 @@ export class DeploymentManager {
         }
 
         try {
-            Logger.verificationStart(name, 'Etherscan');
+            Spinner.start(`Verifying ${name} on Etherscan (waiting for indexing)...`);
 
+            // Wait for Etherscan to index the contract
+            await new Promise(resolve => setTimeout(resolve, 10000));
+
+            Spinner.update(`Verifying ${name} implementation...`);
             await this.hre.run('verify:verify', {
                 address: addresses[0]
             });
 
             await new Promise(resolve => setTimeout(resolve, 5000));
 
-            // Note: ERC1967Proxy verification often fails or isn't necessary
-            // as it's a standard proxy pattern. Skip proxy verification or verify without contract specification
-            try {
-                await this.hre.run('verify:verify', {
-                    address: addresses[1],
-                    constructorArguments: [addresses[0], initializerData || '0x']
-                });
-            } catch (proxyError: any) {
-                // Proxy verification failure is non-critical - log and continue
-                Logger.warning('Proxy verification skipped', 'Standard proxy contract', 2);
+            // Verify proxy if different from implementation
+            if (addresses[1] !== addresses[0]) {
+                Spinner.update(`Verifying ${name} proxy...`);
+                try {
+                    await this.hre.run('verify:verify', {
+                        address: addresses[1],
+                        constructorArguments: [addresses[0], initializerData || '0x']
+                    });
+                } catch (proxyError: any) {
+                    // Proxy verification failure is non-critical
+                }
             }
 
-            Logger.verificationSuccess(name, 'Etherscan');
+            Spinner.stop(true, `${name} verified on Etherscan`);
         } catch (error: any) {
+            Spinner.stop(false)
             const errorMessage = error.message || String(error);
             if (errorMessage.toLowerCase().includes('already verified')) {
-                Logger.verificationSkipped(name, 'already verified');
+                Logger.info(`${name} already verified on Etherscan`);
+            } else if (errorMessage.toLowerCase().includes('does not have bytecode')) {
+                Logger.warning(`${name} verification pending`, 'Not yet indexed. Verify manually later.');
             } else {
-                Logger.error(`Failed to verify ${name}:`, error);
-                throw error;
+                Logger.warning(`${name} verification failed`, 'Verify manually later.');
             }
         }
     }

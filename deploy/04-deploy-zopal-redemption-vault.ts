@@ -16,27 +16,27 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     // Get required contract addresses
     const accessControlAddress = config.contractAddresses['ZothAccessControl']
-    const zeUSDAddress = config.contractAddresses['ZeUSD']
+    const zOPALAddress = config.contractAddresses['zOPAL']
     const dataFeedAddress = config.contractAddresses['PriceOracle']
 
-    if (!accessControlAddress || !zeUSDAddress || !dataFeedAddress) {
+    if (!accessControlAddress || !zOPALAddress || !dataFeedAddress) {
         throw new Error(
             'Required contracts not deployed:\n' +
             `  - ZothAccessControl: ${accessControlAddress || 'MISSING'}\n` +
-            `  - ZeUSD: ${zeUSDAddress || 'MISSING'}\n` +
+            `  - zOPAL: ${zOPALAddress || 'MISSING'}\n` +
             `  - PriceOracle: ${dataFeedAddress || 'MISSING'}`
         )
     }
 
     Logger.log('ZothAccessControl', accessControlAddress, 1)
-    Logger.log('ZeUSD', zeUSDAddress, 1)
+    Logger.log('zOPAL', zOPALAddress, 1)
     Logger.log('PriceOracle', dataFeedAddress, 1)
 
     // Configuration parameters
     const [deployer] = await ethers.getSigners()
 
     const zTokenInitParams = {
-        zToken: zeUSDAddress,
+        zToken: zOPALAddress,
         zTokenDataFeed: dataFeedAddress,
     }
 
@@ -104,38 +104,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         initData
     )
 
-    // Grant necessary roles
-    Logger.log('Setting up roles...', undefined, 1)
-    const ZothAccessControl = await ethers.getContractAt(
-        'ZothAccessControl',
-        accessControlAddress
-    )
+    // Grant burn role to vault (essential for vault to function)
+    const ZothAccessControl = await ethers.getContractAt('ZothAccessControl', accessControlAddress)
+    const ZOPAL_BURN_OPERATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ZOPAL_BURN_OPERATOR_ROLE'))
 
-    const REDEMPTION_VAULT_ADMIN_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('REDEMPTION_VAULT_ADMIN_ROLE')
-    )
-    const ZEUSD_BURN_OPERATOR_ROLE = ethers.keccak256(
-        ethers.toUtf8Bytes('ZEUSD_BURN_OPERATOR_ROLE')
-    )
-
-    // Grant vault admin role to deployer
-    let tx = await ZothAccessControl.grantRole(
-        REDEMPTION_VAULT_ADMIN_ROLE,
-        deployer.address
-    )
-    await tx.wait()
-    Logger.success('Vault admin role granted to deployer', undefined, 2)
-
-    // Grant burn role to vault
-    tx = await ZothAccessControl.grantRole(
-        ZEUSD_BURN_OPERATOR_ROLE,
-        proxyAddress
-    )
-    await tx.wait()
-    Logger.success('Burn role granted to vault', undefined, 2)
+    const vaultHasBurnRole = await ZothAccessControl.hasRole(ZOPAL_BURN_OPERATOR_ROLE, proxyAddress)
+    if (!vaultHasBurnRole) {
+        const tx = await ZothAccessControl.grantRole(ZOPAL_BURN_OPERATOR_ROLE, proxyAddress)
+        await tx.wait()
+        Logger.success('BURN_OPERATOR_ROLE granted to vault', undefined, 1)
+    } else {
+        Logger.info('Vault already has BURN_OPERATOR_ROLE', undefined, 1)
+    }
 
     // Verify deployment
-    const vault = RedemptionVault.attach(proxyAddress)
+    const vault = await ethers.getContractAt('RedemptionVault', proxyAddress)
     const vaultAccessControl = await vault.accessControl()
     const vaultZToken = await vault.zToken()
     const vaultMinAmount = await vault.minAmount()
@@ -144,7 +127,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     Logger.log('Verification:', '', 1)
     Logger.log('Access Control matches', (vaultAccessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 2)
-    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zeUSDAddress.toLowerCase()).toString(), 2)
+    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zOPALAddress.toLowerCase()).toString(), 2)
     Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
     Logger.log('Min Fiat Redeem Amount', ethers.formatEther(vaultMinFiatRedeemAmount), 2)
     Logger.log('Request Redeemer', vaultRequestRedeemer, 2)
@@ -165,5 +148,5 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
 export default func
 func.tags = ['RedemptionVault']
-func.id = 'deploy_zeusd_redemption_vault'
-func.dependencies = ['ZothAccessControl', 'ZeUSD', 'PriceOracle']
+func.id = 'deploy_zopal_redemption_vault'
+func.dependencies = ['ZothAccessControl', 'zOPAL', 'PriceOracle']
