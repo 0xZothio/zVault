@@ -618,9 +618,9 @@ abstract contract ManageableVaultRedeem is
         bool stable
     ) internal view virtual returns (uint256) {
         // @dev if dataFeed returns rate, all peg checks passed
-        uint256 rate = IDataFeed(dataFeed).getDataInBase18();
-
         if (stable) return STABLECOIN_RATE;
+
+        uint256 rate = IDataFeed(dataFeed).getDataInBase18();
 
         return rate;
     }
