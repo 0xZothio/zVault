@@ -129,7 +129,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         Logger.log('Adding USDC payment token', USDC_ADDRESS, 1)
         const addTokenTx = await vault.addPaymentToken(
             USDC_ADDRESS,           // token
-            ethers.ZeroAddress,     // dataFeed (ignored for stablecoins)
+            dataFeedAddress,        // dataFeed (not used for stablecoins, but must be non-zero)
             10,                     // tokenFee: 0.10% (10 basis points)
             true                    // stable: true (uses 1:1 rate)
         )
