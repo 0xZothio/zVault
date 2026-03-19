@@ -47,7 +47,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const instantInitParams = {
         instantFee: 1000, // 10%
-        instantDailyLimit: 0n, // disabled
+        instantDailyLimit: 1n, // minimum valid value (instant redemption will be paused)
     }
 
     const sanctionsList = config.sanctionsList || ethers.ZeroAddress
@@ -67,7 +67,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('  Tokens Receiver', receiversInitParams.tokensReceiver, 1)
     Logger.log('  Fee Receiver', receiversInitParams.feeReceiver, 1)
     Logger.log('  Instant Fee', (instantInitParams.instantFee / 100) + '%', 1)
-    Logger.log('  Daily Limit', instantInitParams.instantDailyLimit === 0n ? 'disabled' : ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 1)
+    Logger.log('  Daily Limit', 'N/A (instant redemption paused)', 1)
     Logger.log('  Variation Tolerance', (variationTolerance / 100) + '%', 1)
     Logger.log('  Min Amount', ethers.formatEther(minAmount) + ' zToken', 1)
     Logger.log('  Fiat Additional Fee', (fiatRedemptionInitParams.fiatAdditionalFee / 100) + '%', 1)
@@ -137,6 +137,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         Logger.success('USDC added as payment token', '0.10% fee, stable', 1)
     } else {
         Logger.info('USDC already added as payment token', undefined, 1)
+    }
+
+    // ========== Pause Instant Redemption ==========
+    const redeemInstantSelector = vault.interface.getFunction('redeemInstant').selector
+    const isInstantPaused = await vault.fnPaused(redeemInstantSelector)
+    
+    if (!isInstantPaused) {
+        Logger.log('Pausing instant redemption', 'redeemInstant disabled', 1)
+        const pauseTx = await vault.pauseFn(redeemInstantSelector)
+        await pauseTx.wait()
+        Logger.success('Instant redemption paused', undefined, 1)
+    } else {
+        Logger.info('Instant redemption already paused', undefined, 1)
     }
 
     // Verify deployment
