@@ -46,15 +46,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     const instantInitParams = {
-        instantFee: 50, // 0.5%
-        instantDailyLimit: ethers.parseEther('1000000'),
+        instantFee: 0, // 0% (no fee for deposits)
+        instantDailyLimit: ethers.parseEther('10000000'), // 10M USD daily limit
     }
 
     const sanctionsList = config.sanctionsList || ethers.ZeroAddress
-    const variationTolerance = 200 // 2%
-    const minAmount = ethers.parseEther('1')
-    const minZTokenAmountForFirstDeposit = ethers.parseEther('1')
-    const maxSupplyCap = ethers.parseEther('1000000000')
+    const variationTolerance = 1 // 0.01% (1 basis point)
+    const minAmount = ethers.parseEther('0.0001') // 0.0001 USD minimum
+    const minZTokenAmountForFirstDeposit = ethers.parseEther('0.0001') // 0.0001 USD minimum first deposit
+    const maxSupplyCap = ethers.parseEther('1000000000') // 1B zOPAL
 
     Logger.log('Configuration:', '', 1)
     Logger.log('Tokens Receiver', receiversInitParams.tokensReceiver, 2)
@@ -109,8 +109,29 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         Logger.info('Vault already has MINT_OPERATOR_ROLE', undefined, 1)
     }
 
-    // Verify deployment
+    // ========== Add USDC Payment Token ==========
     const vault = await ethers.getContractAt('zOPALDepositVault', proxyAddress)
+    
+    // USDC on Base mainnet
+    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    const paymentTokens = await vault.getPaymentTokens()
+    
+    if (!paymentTokens.map((t: string) => t.toLowerCase()).includes(USDC_ADDRESS.toLowerCase())) {
+        Logger.log('Adding USDC payment token', USDC_ADDRESS, 1)
+        const addTokenTx = await vault.addPaymentToken(
+            USDC_ADDRESS,           // token
+            ethers.ZeroAddress,     // dataFeed (ignored for stablecoins)
+            0,                      // tokenFee: 0% 
+            ethers.MaxUint256,      // allowance: unlimited
+            true                    // stable: true (uses 1:1 rate)
+        )
+        await addTokenTx.wait()
+        Logger.success('USDC added as payment token', '0% fee, stable', 1)
+    } else {
+        Logger.info('USDC already added as payment token', undefined, 1)
+    }
+
+    // Verify deployment
     const vaultAccessControl = await vault.accessControl()
     const vaultZToken = await vault.zToken()
     const vaultMinAmount = await vault.minAmount()
@@ -121,6 +142,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('zToken matches', (vaultZToken.toLowerCase() === zOPALAddress.toLowerCase()).toString(), 2)
     Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
     Logger.log('Max Supply Cap', ethers.formatEther(vaultMaxSupplyCap), 2)
+    Logger.log('Payment Tokens', (await vault.getPaymentTokens()).length.toString(), 2)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(

@@ -68,7 +68,7 @@
             "contractAddresses": {},
             "tokensReceiver": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
             "feeReceiver": "0x16B83aE45d362327cb230aC4Cf72C94190601f7a",
-            "sanctionsList": "0x0000000000000000000000000000000000000000",
+            "sanctionsList": "0x3A91A31cB3dC49b4db9Ce721F50a9D076c8D739B",
             "requestRedeemer": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
             "roles": {
                 "defaultAdmin": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04",

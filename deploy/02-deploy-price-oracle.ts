@@ -57,9 +57,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // ========== Deploy PriceOracle ==========
     const PriceOracle = await ethers.getContractFactory('PriceOracle')
 
-    const priceDecimals = 2
-    const tolerancePercent = 200
-    const maxStaleness = 86400
+    const priceDecimals = 4      // 4 decimals (e.g., 10000 = $1.0000)
+    const tolerancePercent = 5   // 0.05% tolerance (5 basis points)
+    const maxStaleness = 108000  // 30 hours in seconds
 
     Logger.log('Price decimals', priceDecimals.toString(), 1)
     Logger.log('Tolerance', (tolerancePercent / 100).toFixed(2) + '%', 1)
@@ -80,6 +80,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('Config verified - decimals', decimals.toString(), 1)
     Logger.log('Config verified - tolerance', (Number(tolerance) / 100).toFixed(2) + '%', 1)
     Logger.log('Config verified - staleness', (Number(staleness) / 3600).toFixed(0) + ' hours', 1)
+
+    // ========== Set Initial Price ==========
+    const initialPrice = 10000 // $1.0000 with 4 decimals
+    const currentPrice = await priceOracle.currentPrice()
+    
+    if (currentPrice === 0n) {
+        Logger.log('Setting initial price', '$1.0000', 1)
+        const tx = await priceOracle.setPrice(initialPrice)
+        await tx.wait()
+        
+        const newPrice = await priceOracle.currentPrice()
+        const timestamp = await priceOracle.lastUpdateTimestamp()
+        Logger.success('Initial price set', ethers.formatEther(newPrice) + ' (base18)', 1)
+        Logger.log('Last update timestamp', new Date(Number(timestamp) * 1000).toISOString(), 1)
+    } else {
+        Logger.info('Price already set', ethers.formatEther(currentPrice) + ' (base18)', 1)
+    }
 
     // Verify the contract on live networks
     if (network.name !== 'hardhat' && network.name !== 'localhost' && network.name !== 'virtual_mainnet') {
