@@ -109,6 +109,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         Logger.info('Vault already has MINT_OPERATOR_ROLE', undefined, 1)
     }
 
+    // ========== Grant ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE to deployer ==========
+    const ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE'))
+    const deployerHasVaultAdmin = await ZothAccessControl.hasRole(ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE, deployer.address)
+    if (!deployerHasVaultAdmin) {
+        const tx = await ZothAccessControl.grantRole(ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE, deployer.address)
+        await tx.wait()
+        Logger.success('ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE granted to deployer', undefined, 1)
+    }
+
     // ========== Add USDC Payment Token ==========
     const vault = await ethers.getContractAt('zOPALDepositVault', proxyAddress)
     

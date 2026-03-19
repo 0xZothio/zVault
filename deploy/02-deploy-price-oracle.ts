@@ -26,11 +26,21 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         [deployer.address]
     )
 
+    // Wait for contract to be indexed on live networks
+    if (network.name !== 'hardhat' && network.name !== 'localhost') {
+        Logger.log('Waiting for contract indexing...', undefined, 1)
+        await new Promise(resolve => setTimeout(resolve, 5000))
+    }
+
     // Verify FunctionsAccessControl deployment
     const functionsAccessControl = await ethers.getContractAt('FunctionsAccessControl', functionsAccessControlAddress)
     const DEFAULT_ADMIN_ROLE = ethers.ZeroHash
-    const hasAdminRole = await functionsAccessControl.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)
-    Logger.log('Deployer has DEFAULT_ADMIN_ROLE', hasAdminRole.toString(), 1)
+    try {
+        const hasAdminRole = await functionsAccessControl.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)
+        Logger.log('Deployer has DEFAULT_ADMIN_ROLE', hasAdminRole.toString(), 1)
+    } catch {
+        Logger.warning('Could not verify role', 'Contract not yet indexed', 1)
+    }
 
     // Verify the contract on live networks
     if (network.name !== 'hardhat' && network.name !== 'localhost' && network.name !== 'virtual_mainnet') {
