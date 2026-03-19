@@ -1,0 +1,34 @@
+{
+  "network": "base",
+  "chainId": 8453,
+  "contractAddresses": {
+    "ProxyAdmin": "0x5A9916C8B89F4Cc97B782d5138Ea54A17EB79b84",
+    "ZothAccessControl": "0x11E5c20a11e8b75BB2Ae6F136DaB1cBB1DA9CBb1",
+    "zOPAL": "0x2E9705d95f1624faB9CAAba775234571BD557f24",
+    "FunctionsAccessControl": "0x58722C4F1a8BCa491dCF074AE3C6B519cC859cB7",
+    "PriceOracle": "0x2756bF902563B6e767A6E9EC20abFaB3706715Eb",
+    "zOPALDepositVault": "0x6578Fe7a4A8c0B8C34FC8c85A8f99cc16affe850",
+    "RedemptionVault": "0x87e86d6930f7e922E02cD92821fBaaF9D5e9B403"
+  },
+  "tokensReceiver": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
+  "feeReceiver": "0x16B83aE45d362327cb230aC4Cf72C94190601f7a",
+  "sanctionsList": "0x3A91A31cB3dC49b4db9Ce721F50a9D076c8D739B",
+  "requestRedeemer": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
+  "roles": {
+    "defaultAdmin": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04",
+    "depositVaultAdmin": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
+    "redemptionVaultAdmin": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
+    "pauseOperator": "0xf7dec551FAaA4EC4d7b31087BB58102bBbD379a1",
+    "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+    "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+    "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
+    "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
+  },
+  "skipDeployerTokenRoles": true,
+  "deployment": {
+    "timestamp": "2026-03-19T11:36:39.348Z",
+    "version": "1.0.0",
+    "deployer": "unknown",
+    "network": "base"
+  }
+}
