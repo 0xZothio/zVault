@@ -16,7 +16,7 @@
                 "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
-                "configRole": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e"
+                "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
             "skipDeployerTokenRoles": true
         },
@@ -47,7 +47,7 @@
                 "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
-                "configRole": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e"
+                "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
             "skipDeployerTokenRoles": true
         },
@@ -78,7 +78,7 @@
                 "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
-                "configRole": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e"
+                "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
             "skipDeployerTokenRoles": true
         },
@@ -98,7 +98,7 @@
                 "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
-                "configRole": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e"
+                "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
             "skipDeployerTokenRoles": false
         }

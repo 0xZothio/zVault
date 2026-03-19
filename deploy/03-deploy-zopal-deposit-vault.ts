@@ -56,15 +56,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const minZTokenAmountForFirstDeposit = ethers.parseEther('0.0001') // 0.0001 USD minimum first deposit
     const maxSupplyCap = ethers.parseEther('1000000000') // 1B zOPAL
 
-    Logger.log('Configuration:', '', 1)
-    Logger.log('Tokens Receiver', receiversInitParams.tokensReceiver, 2)
-    Logger.log('Fee Receiver', receiversInitParams.feeReceiver, 2)
-    Logger.log('Instant Fee', (instantInitParams.instantFee / 100) + '%', 2)
-    Logger.log('Daily Limit', ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 2)
-    Logger.log('Variation Tolerance', (variationTolerance / 100) + '%', 2)
-    Logger.log('Min Amount', ethers.formatEther(minAmount) + ' USD', 2)
-    Logger.log('Min First Deposit', ethers.formatEther(minZTokenAmountForFirstDeposit) + ' USD', 2)
-    Logger.log('Max Supply Cap', ethers.formatEther(maxSupplyCap), 2)
+    Logger.log('Configuration:', undefined, 1)
+    Logger.log('  Tokens Receiver', receiversInitParams.tokensReceiver, 1)
+    Logger.log('  Fee Receiver', receiversInitParams.feeReceiver, 1)
+    Logger.log('  Instant Fee', (instantInitParams.instantFee / 100) + '%', 1)
+    Logger.log('  Daily Limit', ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 1)
+    Logger.log('  Variation Tolerance', (variationTolerance / 100) + '%', 1)
+    Logger.log('  Min Amount', ethers.formatEther(minAmount) + ' USD', 1)
+    Logger.log('  Min First Deposit', ethers.formatEther(minZTokenAmountForFirstDeposit) + ' USD', 1)
+    Logger.log('  Max Supply Cap', ethers.formatEther(maxSupplyCap), 1)
 
     // Get the contract factory
     const zOPALDepositVault = await ethers.getContractFactory('zOPALDepositVault')

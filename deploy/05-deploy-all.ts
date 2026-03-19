@@ -172,19 +172,63 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
                 await revokeRoleIfNeeded(accessControl, BLACKLIST_OPERATOR_ROLE, deployer.address, 'BLACKLIST_OPERATOR')
                 await revokeRoleIfNeeded(accessControl, DEFAULT_ADMIN_ROLE, deployer.address, 'DEFAULT_ADMIN')
 
-                // Verify
-                Logger.section('Verification')
-                const deployerStillAdmin = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, deployer.address)
-                const newAdminHasRole = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, roles.defaultAdmin)
+                // Verify all roles revoked from deployer
+                Logger.section('Verification - Deployer Roles')
+                
+                const deployerRoleChecks = [
+                    { role: DEFAULT_ADMIN_ROLE, name: 'DEFAULT_ADMIN_ROLE' },
+                    { role: ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE, name: 'ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE' },
+                    { role: REDEMPTION_VAULT_ADMIN_ROLE, name: 'REDEMPTION_VAULT_ADMIN_ROLE' },
+                    { role: ZOPAL_MINT_OPERATOR_ROLE, name: 'ZOPAL_MINT_OPERATOR_ROLE' },
+                    { role: ZOPAL_BURN_OPERATOR_ROLE, name: 'ZOPAL_BURN_OPERATOR_ROLE' },
+                    { role: ZOPAL_PAUSE_OPERATOR_ROLE, name: 'ZOPAL_PAUSE_OPERATOR_ROLE' },
+                    { role: GREENLIST_OPERATOR_ROLE, name: 'GREENLIST_OPERATOR_ROLE' },
+                    { role: BLACKLIST_OPERATOR_ROLE, name: 'BLACKLIST_OPERATOR_ROLE' },
+                    { role: DEPOSIT_VAULT_ADMIN_ROLE, name: 'DEPOSIT_VAULT_ADMIN_ROLE' },
+                ]
 
-                if (!deployerStillAdmin) {
-                    Logger.success('Deployer no longer has DEFAULT_ADMIN_ROLE')
-                } else {
-                    Logger.error('Deployer still has DEFAULT_ADMIN_ROLE!')
+                let deployerHasRoles = false
+                for (const { role, name } of deployerRoleChecks) {
+                    const hasRole = await accessControl.hasRole(role, deployer.address)
+                    if (hasRole) {
+                        Logger.error(`Deployer still has ${name}`)
+                        deployerHasRoles = true
+                    }
+                }
+                
+                if (!deployerHasRoles) {
+                    Logger.success('Deployer has NO roles in ZothAccessControl')
                 }
 
+                // Verify FunctionsAccessControl
+                if (functionsAccessControlAddress) {
+                    const functionsAccessControl = await ethers.getContractAt('FunctionsAccessControl', functionsAccessControlAddress)
+                    
+                    const funcRoleChecks = [
+                        { role: DEFAULT_ADMIN_ROLE, name: 'DEFAULT_ADMIN_ROLE' },
+                        { role: PRICE_ADMIN_ROLE, name: 'PRICE_ADMIN_ROLE' },
+                        { role: CONFIG_ROLE, name: 'CONFIG_ROLE' },
+                    ]
+
+                    let deployerHasFuncRoles = false
+                    for (const { role, name } of funcRoleChecks) {
+                        const hasRole = await functionsAccessControl.hasRole(role, deployer.address)
+                        if (hasRole) {
+                            Logger.error(`Deployer still has ${name} in FunctionsAccessControl`)
+                            deployerHasFuncRoles = true
+                        }
+                    }
+                    
+                    if (!deployerHasFuncRoles) {
+                        Logger.success('Deployer has NO roles in FunctionsAccessControl')
+                    }
+                }
+
+                // Verify new admin
+                Logger.section('Verification - New Admin')
+                const newAdminHasRole = await accessControl.hasRole(DEFAULT_ADMIN_ROLE, roles.defaultAdmin)
                 if (newAdminHasRole) {
-                    Logger.success('New admin has DEFAULT_ADMIN_ROLE')
+                    Logger.success(`New admin (${roles.defaultAdmin}) has DEFAULT_ADMIN_ROLE`)
                 } else {
                     Logger.error('New admin does not have DEFAULT_ADMIN_ROLE!')
                 }

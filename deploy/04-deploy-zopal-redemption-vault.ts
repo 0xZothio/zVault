@@ -46,8 +46,8 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     const instantInitParams = {
-        instantFee: 0, // 0% (no fee for redemptions)
-        instantDailyLimit: ethers.parseEther('10000000'), // 10M USD daily limit
+        instantFee: 1000, // 10%
+        instantDailyLimit: 0n, // disabled
     }
 
     const sanctionsList = config.sanctionsList || ethers.ZeroAddress
@@ -63,17 +63,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const requestRedeemer = config.requestRedeemer || deployer.address
 
-    Logger.log('Configuration:', '', 1)
-    Logger.log('Tokens Receiver', receiversInitParams.tokensReceiver, 2)
-    Logger.log('Fee Receiver', receiversInitParams.feeReceiver, 2)
-    Logger.log('Instant Fee', (instantInitParams.instantFee / 100) + '%', 2)
-    Logger.log('Daily Limit', ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 2)
-    Logger.log('Variation Tolerance', (variationTolerance / 100) + '%', 2)
-    Logger.log('Min Amount', ethers.formatEther(minAmount) + ' zToken', 2)
-    Logger.log('Fiat Additional Fee', (fiatRedemptionInitParams.fiatAdditionalFee / 100) + '%', 2)
-    Logger.log('Fiat Flat Fee', ethers.formatEther(fiatRedemptionInitParams.fiatFlatFee) + ' zToken', 2)
-    Logger.log('Min Fiat Redeem Amount', ethers.formatEther(fiatRedemptionInitParams.minFiatRedeemAmount) + ' zToken', 2)
-    Logger.log('Request Redeemer', requestRedeemer, 2)
+    Logger.log('Configuration:', undefined, 1)
+    Logger.log('  Tokens Receiver', receiversInitParams.tokensReceiver, 1)
+    Logger.log('  Fee Receiver', receiversInitParams.feeReceiver, 1)
+    Logger.log('  Instant Fee', (instantInitParams.instantFee / 100) + '%', 1)
+    Logger.log('  Daily Limit', instantInitParams.instantDailyLimit === 0n ? 'disabled' : ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 1)
+    Logger.log('  Variation Tolerance', (variationTolerance / 100) + '%', 1)
+    Logger.log('  Min Amount', ethers.formatEther(minAmount) + ' zToken', 1)
+    Logger.log('  Fiat Additional Fee', (fiatRedemptionInitParams.fiatAdditionalFee / 100) + '%', 1)
+    Logger.log('  Fiat Flat Fee', ethers.formatEther(fiatRedemptionInitParams.fiatFlatFee) + ' zToken', 1)
+    Logger.log('  Min Fiat Redeem Amount', ethers.formatEther(fiatRedemptionInitParams.minFiatRedeemAmount) + ' zToken', 1)
+    Logger.log('  Request Redeemer', requestRedeemer, 1)
 
     // Get the contract factory
     const RedemptionVault = await ethers.getContractFactory('RedemptionVault')
