@@ -49,7 +49,7 @@ const config: HardhatUserConfig = {
 
     base: {
       chainId: 8453,
-      url: process.env.BASE_RPC_URL,
+      url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
       accounts: ACCOUNTS,
     },
 

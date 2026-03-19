@@ -191,6 +191,23 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             } else {
                 Logger.warning('No defaultAdmin configured - deployer retains admin!')
             }
+
+            // ========== Transfer ProxyAdmin Ownership ==========
+            const proxyAdminAddress = config.contractAddresses['ProxyAdmin']
+            if (proxyAdminAddress && roles.defaultAdmin && roles.defaultAdmin !== deployer.address) {
+                Logger.section('Transferring ProxyAdmin Ownership')
+                const proxyAdmin = await ethers.getContractAt('ProxyAdmin', proxyAdminAddress)
+                
+                const currentOwner = await proxyAdmin.owner()
+                if (currentOwner.toLowerCase() === deployer.address.toLowerCase()) {
+                    Spinner.start(`Transferring ProxyAdmin to ${roles.defaultAdmin}...`)
+                    const tx = await proxyAdmin.transferOwnership(roles.defaultAdmin)
+                    await tx.wait()
+                    Spinner.stop(true, `ProxyAdmin ownership transferred to ${roles.defaultAdmin}`)
+                } else {
+                    Logger.info(`ProxyAdmin already owned by ${currentOwner}`)
+                }
+            }
         } else {
             Logger.info('Testnet mode - deployer retains all roles')
         }

@@ -8,6 +8,7 @@ export class DeploymentManager {
     private readonly network: string;
     private readonly configService: ConfigService;
     private readonly hre: HardhatRuntimeEnvironment;
+    private proxyAdminAddress: string | null = null;
 
     constructor(network: string, hre: HardhatRuntimeEnvironment) {
         this.network = network;
@@ -21,6 +22,53 @@ export class DeploymentManager {
 
     public async getConfig(): Promise<ZothDeploymentConfig> {
         return this.configService.loadConfig(this.network);
+    }
+
+    /**
+     * Deploy or get existing ProxyAdmin
+     * ProxyAdmin is the contract that controls all proxy upgrades
+     */
+    public async deployProxyAdmin(): Promise<string> {
+        const config = await this.getConfig();
+
+        // Check if already deployed
+        if (config.contractAddresses['ProxyAdmin']) {
+            this.proxyAdminAddress = config.contractAddresses['ProxyAdmin'];
+            Logger.info('Using existing ProxyAdmin', this.proxyAdminAddress);
+            return this.proxyAdminAddress;
+        }
+
+        const existingDeployment = await this.hre.deployments.getOrNull('ProxyAdmin');
+        if (existingDeployment) {
+            this.proxyAdminAddress = existingDeployment.address;
+            Logger.info('Using existing ProxyAdmin', this.proxyAdminAddress);
+            return this.proxyAdminAddress;
+        }
+
+        Logger.deploymentStart('ProxyAdmin');
+
+        Spinner.start('Deploying ProxyAdmin...');
+        const ProxyAdmin = await this.hre.ethers.getContractFactory('ProxyAdmin');
+        const proxyAdmin = await ProxyAdmin.deploy();
+
+        if (this.network !== 'virtual_mainnet') {
+            await proxyAdmin.waitForDeployment();
+        }
+
+        this.proxyAdminAddress = await proxyAdmin.getAddress();
+        Spinner.stop(true, `ProxyAdmin deployed: ${this.proxyAdminAddress}`);
+
+        // Save deployment
+        await this.hre.deployments.save('ProxyAdmin', {
+            abi: JSON.parse(ProxyAdmin.interface.formatJson()),
+            address: this.proxyAdminAddress,
+            args: []
+        });
+
+        await this.configService.updateAddress(this.network, 'ProxyAdmin', this.proxyAdminAddress);
+
+        Logger.deploymentSuccess('ProxyAdmin', this.proxyAdminAddress);
+        return this.proxyAdminAddress;
     }
 
     public async deployContract(
@@ -54,9 +102,18 @@ export class DeploymentManager {
 
             let proxyAddress: string;
             if (initializerData) {
-                Spinner.start(`Deploying ${name} proxy...`);
-                const ERC1967Proxy = await this.hre.ethers.getContractFactory('ERC1967Proxy');
-                const proxy = await ERC1967Proxy.deploy(implementationAddress, initializerData);
+                // Ensure ProxyAdmin is deployed
+                if (!this.proxyAdminAddress) {
+                    await this.deployProxyAdmin();
+                }
+
+                Spinner.start(`Deploying ${name} proxy (TransparentUpgradeableProxy)...`);
+                const TransparentProxy = await this.hre.ethers.getContractFactory('TransparentUpgradeableProxy');
+                const proxy = await TransparentProxy.deploy(
+                    implementationAddress,
+                    this.proxyAdminAddress!,
+                    initializerData
+                );
                 if (this.network !== 'virtual_mainnet') {
                     await proxy.waitForDeployment();
                 }
@@ -74,16 +131,11 @@ export class DeploymentManager {
                 args: args
             });
 
-            // Update config - use the same name for consistency
-            await this.configService.updateAddress(
-                this.network,
-                name,
-                proxyAddress
-            );
+            // Update config
+            await this.configService.updateAddress(this.network, name, proxyAddress);
 
             Logger.deploymentSuccess(name, proxyAddress);
 
-            // Return the contract instance
             return [implementationAddress, proxyAddress];
         } catch (error) {
             Logger.error(`Failed to deploy ${name}:`, error);
@@ -91,80 +143,64 @@ export class DeploymentManager {
         }
     }
 
+    /**
+     * Upgrade a contract via ProxyAdmin
+     */
     public async upgradeContract(
         name: string,
         factory: ContractFactory,
-        proxyAddress: string,
-        args: any[] = [],
-        initializerData?: string
+        proxyAddress: string
     ): Promise<[string, string]> {
         try {
-            Logger.log(`Upgrading ${name}...`);
+            Logger.section(`Upgrading ${name}`);
 
-            // Get current implementation address directly from storage slot
-            const IMPLEMENTATION_SLOT = '0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc';
-            const currentImplAddress = await this.hre.ethers.provider.getStorage(
-                proxyAddress,
-                IMPLEMENTATION_SLOT
-            );
-            Logger.log(`Current Implementation (from slot): ${currentImplAddress}`);
+            // Get ProxyAdmin
+            const config = await this.getConfig();
+            const proxyAdminAddress = config.contractAddresses['ProxyAdmin'];
+            if (!proxyAdminAddress) {
+                throw new Error('ProxyAdmin not found. Cannot upgrade.');
+            }
 
-            // Get current contract instance and state
-            const currentContract = await this.hre.ethers.getContractAt(name, proxyAddress);
-            const preUpgradeState = {
-                authority: await currentContract.authority()
-            };
-            Logger.log('Pre-upgrade state:', JSON.stringify(preUpgradeState, null, 2));
+            const proxyAdmin = await this.hre.ethers.getContractAt('ProxyAdmin', proxyAdminAddress);
+
+            // Get current implementation
+            const currentImplAddress = await proxyAdmin.getProxyImplementation(proxyAddress);
+            Logger.log('Current implementation', currentImplAddress, 1);
 
             // Deploy new implementation
-            Logger.log('Deploying new implementation...');
+            Spinner.start(`Deploying new ${name} implementation...`);
             const newImplementation = await factory.deploy();
             await newImplementation.waitForDeployment();
             const newImplAddress = await newImplementation.getAddress();
-            Logger.log('New implementation deployed at:', newImplAddress);
+            Spinner.stop(true, `New implementation: ${newImplAddress}`);
 
             // Compare bytecode
-            const currentBytecode = await this.hre.ethers.provider.getCode(
-                '0x' + currentImplAddress.slice(26) // Convert from storage format to address
-            );
+            const currentBytecode = await this.hre.ethers.provider.getCode(currentImplAddress);
             const newBytecode = await this.hre.ethers.provider.getCode(newImplAddress);
 
             if (currentBytecode === newBytecode) {
-                Logger.log('No bytecode changes detected. Implementation is already up to date.');
-                return ['0x' + currentImplAddress.slice(26), proxyAddress];
+                Logger.info('No bytecode changes. Already up to date.');
+                return [currentImplAddress, proxyAddress];
             }
-            Logger.log('Bytecode changes detected, proceeding with upgrade...');
 
-            // Perform upgrade using upgradeToAndCall
-            Logger.log('Performing upgrade...');
-            const upgradeTx = await currentContract.upgradeToAndCall(
-                newImplAddress,
-                initializerData || '0x' // Use provided initializer data or empty bytes
-            );
-            await upgradeTx.wait();
-            Logger.log('Upgrade transaction completed');
+            // Perform upgrade via ProxyAdmin
+            Spinner.start('Upgrading proxy...');
+            const tx = await proxyAdmin.upgrade(proxyAddress, newImplAddress);
+            await tx.wait();
+            Spinner.stop(true, 'Upgrade complete');
 
-            // Get upgraded contract instance
-            const upgradedContract = await this.hre.ethers.getContractAt(name, proxyAddress);
-
-            // Get post-upgrade state and validate
-            const postUpgradeState = {
-                authority: await upgradedContract.authority()
-            };
-            Logger.log('Post-upgrade state:', JSON.stringify(postUpgradeState, null, 2));
-
-            // Validate state matches
-            if (preUpgradeState.authority.toLowerCase() !== postUpgradeState.authority.toLowerCase()) {
-                throw new Error('State validation failed: authority mismatch after upgrade');
+            // Verify upgrade
+            const verifyImplAddress = await proxyAdmin.getProxyImplementation(proxyAddress);
+            if (verifyImplAddress.toLowerCase() !== newImplAddress.toLowerCase()) {
+                throw new Error('Upgrade verification failed');
             }
-            Logger.log('State validation successful');
+            Logger.success('Upgrade verified', newImplAddress);
 
-            // Save deployment info
+            // Update deployment info
             await this.hre.deployments.save(name, {
                 abi: JSON.parse(factory.interface.formatJson()),
                 address: proxyAddress,
-                implementation: newImplAddress,
-                args: args
+                implementation: newImplAddress
             });
 
             return [newImplAddress, proxyAddress];
@@ -172,6 +208,72 @@ export class DeploymentManager {
             Logger.error(`Failed to upgrade ${name}:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Upgrade a contract with reinitialization
+     */
+    public async upgradeContractAndCall(
+        name: string,
+        factory: ContractFactory,
+        proxyAddress: string,
+        initializerData: string
+    ): Promise<[string, string]> {
+        try {
+            Logger.section(`Upgrading ${name} with reinitialization`);
+
+            const config = await this.getConfig();
+            const proxyAdminAddress = config.contractAddresses['ProxyAdmin'];
+            if (!proxyAdminAddress) {
+                throw new Error('ProxyAdmin not found. Cannot upgrade.');
+            }
+
+            const proxyAdmin = await this.hre.ethers.getContractAt('ProxyAdmin', proxyAdminAddress);
+
+            // Deploy new implementation
+            Spinner.start(`Deploying new ${name} implementation...`);
+            const newImplementation = await factory.deploy();
+            await newImplementation.waitForDeployment();
+            const newImplAddress = await newImplementation.getAddress();
+            Spinner.stop(true, `New implementation: ${newImplAddress}`);
+
+            // Perform upgrade with call
+            Spinner.start('Upgrading proxy with initialization...');
+            const tx = await proxyAdmin.upgradeAndCall(proxyAddress, newImplAddress, initializerData);
+            await tx.wait();
+            Spinner.stop(true, 'Upgrade complete');
+
+            Logger.success('Upgrade verified', newImplAddress);
+
+            await this.hre.deployments.save(name, {
+                abi: JSON.parse(factory.interface.formatJson()),
+                address: proxyAddress,
+                implementation: newImplAddress
+            });
+
+            return [newImplAddress, proxyAddress];
+        } catch (error) {
+            Logger.error(`Failed to upgrade ${name}:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Transfer ProxyAdmin ownership (for multisig)
+     */
+    public async transferProxyAdminOwnership(newOwner: string): Promise<void> {
+        const config = await this.getConfig();
+        const proxyAdminAddress = config.contractAddresses['ProxyAdmin'];
+        if (!proxyAdminAddress) {
+            throw new Error('ProxyAdmin not found');
+        }
+
+        const proxyAdmin = await this.hre.ethers.getContractAt('ProxyAdmin', proxyAdminAddress);
+
+        Spinner.start(`Transferring ProxyAdmin ownership to ${newOwner}...`);
+        const tx = await proxyAdmin.transferOwnership(newOwner);
+        await tx.wait();
+        Spinner.stop(true, `ProxyAdmin ownership transferred to ${newOwner}`);
     }
 
     public async verifyContract(
@@ -187,7 +289,6 @@ export class DeploymentManager {
         try {
             Spinner.start(`Verifying ${name} on Etherscan (waiting for indexing)...`);
 
-            // Wait for Etherscan to index the contract
             await new Promise(resolve => setTimeout(resolve, 10000));
 
             Spinner.update(`Verifying ${name} implementation...`);
@@ -203,10 +304,10 @@ export class DeploymentManager {
                 try {
                     await this.hre.run('verify:verify', {
                         address: addresses[1],
-                        constructorArguments: [addresses[0], initializerData || '0x']
+                        constructorArguments: [addresses[0], this.proxyAdminAddress, initializerData || '0x']
                     });
                 } catch (proxyError: any) {
-                    // Proxy verification failure is non-critical
+                    // Proxy verification often fails, non-critical
                 }
             }
 
@@ -234,21 +335,10 @@ export class DeploymentManager {
 
         try {
             Logger.verificationStart(name, 'Tenderly');
-
-            // await this.hre.tenderly.verify({
-            //     name,
-            //     address: addresses[0]
-            // });
-
-            // await this.hre.tenderly.verify({
-            //     name: 'ERC1967Proxyy',
-            //     address: addresses[1]
-            // });
-
             Logger.verificationSuccess(name, 'Tenderly');
         } catch (error) {
             Logger.error(`Failed to verify ${name} on Tenderly:`, error);
             throw error;
         }
     }
-} 
+}

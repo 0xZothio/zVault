@@ -46,18 +46,19 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     }
 
     const instantInitParams = {
-        instantFee: 50, // 0.5%
-        instantDailyLimit: ethers.parseEther('1000000'),
+        instantFee: 0, // 0% (no fee for redemptions)
+        instantDailyLimit: ethers.parseEther('10000000'), // 10M USD daily limit
     }
 
     const sanctionsList = config.sanctionsList || ethers.ZeroAddress
-    const variationTolerance = 200 // 2%
-    const minAmount = ethers.parseEther('1')
+    const variationTolerance = 1 // 0.01% (1 basis point)
+    const minAmount = ethers.parseEther('0.0001') // 0.0001 zToken minimum
 
+    // Fiat redemption disabled - set to 0 values
     const fiatRedemptionInitParams = {
-        fiatAdditionalFee: 100, // 1%
-        fiatFlatFee: ethers.parseEther('10'), // 10 zToken
-        minFiatRedeemAmount: ethers.parseEther('100'),
+        fiatAdditionalFee: 0, // 0% (disabled)
+        fiatFlatFee: ethers.parseEther('0'), // 0 zToken (disabled)
+        minFiatRedeemAmount: ethers.parseEther('0'), // 0 (disabled)
     }
 
     const requestRedeemer = config.requestRedeemer || deployer.address
@@ -117,8 +118,28 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
         Logger.info('Vault already has BURN_OPERATOR_ROLE', undefined, 1)
     }
 
-    // Verify deployment
+    // ========== Add USDC Payment Token ==========
     const vault = await ethers.getContractAt('RedemptionVault', proxyAddress)
+    
+    // USDC on Base mainnet
+    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    const paymentTokens = await vault.getPaymentTokens()
+    
+    if (!paymentTokens.map((t: string) => t.toLowerCase()).includes(USDC_ADDRESS.toLowerCase())) {
+        Logger.log('Adding USDC payment token', USDC_ADDRESS, 1)
+        const addTokenTx = await vault.addPaymentToken(
+            USDC_ADDRESS,           // token
+            ethers.ZeroAddress,     // dataFeed (ignored for stablecoins)
+            10,                     // tokenFee: 0.10% (10 basis points)
+            true                    // stable: true (uses 1:1 rate)
+        )
+        await addTokenTx.wait()
+        Logger.success('USDC added as payment token', '0.10% fee, stable', 1)
+    } else {
+        Logger.info('USDC already added as payment token', undefined, 1)
+    }
+
+    // Verify deployment
     const vaultAccessControl = await vault.accessControl()
     const vaultZToken = await vault.zToken()
     const vaultMinAmount = await vault.minAmount()
@@ -131,6 +152,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
     Logger.log('Min Fiat Redeem Amount', ethers.formatEther(vaultMinFiatRedeemAmount), 2)
     Logger.log('Request Redeemer', vaultRequestRedeemer, 2)
+    Logger.log('Payment Tokens', (await vault.getPaymentTokens()).length.toString(), 2)
 
     // Verify the contract on live networks
     await deploymentManager.verifyContract(

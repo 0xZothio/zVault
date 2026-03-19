@@ -35,7 +35,7 @@ contract zOPAL is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZ
     ) external virtual initializer {
         __Blacklistable_init(_accessControl);
         __WithSanctionsList_init_unchained(_sanctionsList);
-        __ERC20_init("zOPAL", "zOPAL");
+        __ERC20_init("Zoth BlackOpal", "zOPAL");
     }
 
     /**

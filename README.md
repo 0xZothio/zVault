@@ -31,7 +31,7 @@ zVault is a DeFi protocol that provides:
 
 | Feature | Description |
 |---------|-------------|
-| Upgradeable Contracts | ERC1967 proxy pattern for upgradeability |
+| Upgradeable Contracts | TransparentUpgradeableProxy pattern for upgradeability |
 | Multi-Token Support | Accept multiple stablecoins as payment |
 | Instant & Request Flows | Both instant minting and request-based flows |
 | Fee System | Configurable instant fees and token-specific fees |
