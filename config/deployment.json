@@ -80,7 +80,11 @@
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
                 "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
-            "skipDeployerTokenRoles": true
+            "skipDeployerTokenRoles": true,
+            "timelock": {
+                "minDelay": 86400,
+                "enabled": true
+            }
         },
         "baseSepolia": {
             "network": "baseSepolia",
