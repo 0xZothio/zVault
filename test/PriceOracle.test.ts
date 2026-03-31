@@ -521,6 +521,85 @@ describe("PriceOracle", function () {
                 priceOracle.connect(priceAdmin).setPrice(newPrice)
             ).to.emit(priceOracle, "PriceUpdated");
         });
+
+        // #20 — Two rapid NAV updates: second respects new baseline, not original
+        it("#20 Two-step NAV updates: tolerance applied from updated price, not original", async function () {
+            // Step 1: Set initial price at 100
+            const price1 = ethers.parseUnits("100", 8);
+            await priceOracle.connect(priceAdmin).setPrice(price1);
+
+            // Step 2: Update to 105 (exactly +5% from 100, at the boundary)
+            const price2 = ethers.parseUnits("105", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price2)
+            ).to.emit(priceOracle, "PriceUpdated");
+            expect(await priceOracle.currentPrice()).to.equal(ethers.parseUnits("105", 18));
+
+            // Step 3: From new baseline of 105, +5% = 110.25 — should be accepted
+            // This would be +10.25% from original 100, which would have failed against original baseline
+            const price3 = ethers.parseUnits("110.25", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price3)
+            ).to.emit(priceOracle, "PriceUpdated");
+            expect(await priceOracle.currentPrice()).to.equal(ethers.parseUnits("110.25", 18));
+
+            // Step 4: Verify that 6% from the NEW baseline (110.25) still reverts
+            // 110.25 * 1.06 = 116.865 — exceeds 5% tolerance from 110.25
+            const price4 = ethers.parseUnits("116.865", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price4)
+            ).to.be.revertedWithCustomError(priceOracle, "ToleranceExceeded");
+        });
+
+        // #64 — Incremental NAV update: multi-step approach reaches target; intermediate prices are correct
+        it("#64 Incremental NAV update — each step within tolerance, final price correct after all steps", async function () {
+            // tolerance = 5% per step (500 bps), deployed in fixture
+            // Target: move from 100 → ~115.76 in three steps of +5% each
+            //   step 1: 100 → 105   (+5.00%)
+            //   step 2: 105 → 110.25 (+5.00%)
+            //   step 3: 110.25 → 115.7625 (+5.00%)
+            // A direct 100 → 115.76 jump (+15.76%) would exceed 5% tolerance and revert.
+
+            const price0 = ethers.parseUnits("100", 8);
+            await priceOracle.connect(priceAdmin).setPrice(price0);
+
+            // Verify direct jump reverts
+            const directTarget = ethers.parseUnits("115.7625", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(directTarget)
+            ).to.be.revertedWithCustomError(priceOracle, "ToleranceExceeded");
+
+            // Step 1: 100 → 105
+            const price1 = ethers.parseUnits("105", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price1)
+            ).to.emit(priceOracle, "PriceUpdated");
+            expect(await priceOracle.currentPrice()).to.equal(ethers.parseUnits("105", 18));
+
+            // Step 2: 105 → 110.25
+            const price2 = ethers.parseUnits("110.25", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price2)
+            ).to.emit(priceOracle, "PriceUpdated");
+            expect(await priceOracle.currentPrice()).to.equal(ethers.parseUnits("110.25", 18));
+
+            // Step 3: 110.25 → 115.7625
+            const price3 = ethers.parseUnits("115.7625", 8);
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(price3)
+            ).to.emit(priceOracle, "PriceUpdated");
+            expect(await priceOracle.currentPrice()).to.equal(ethers.parseUnits("115.7625", 18));
+
+            // Final price matches the incremental target
+            const finalPrice = await priceOracle.currentPrice();
+            expect(finalPrice).to.equal(ethers.parseUnits("115.7625", 18));
+
+            // Any further step that exceeds 5% from the new baseline should still revert
+            const overTolerance = ethers.parseUnits("122", 8); // ~5.4% above 115.7625
+            await expect(
+                priceOracle.connect(priceAdmin).setPrice(overTolerance)
+            ).to.be.revertedWithCustomError(priceOracle, "ToleranceExceeded");
+        });
     });
 });
 
