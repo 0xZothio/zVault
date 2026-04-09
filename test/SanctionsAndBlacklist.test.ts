@@ -12,6 +12,10 @@ import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers"
  * #6  - Blacklisted wallet attempts deposit → reverts
  * #7  - Blacklisted wallet attempts redemption → reverts
  * #8  - Blacklisted wallet attempts transfer → reverts
+ * #9  - Greenlisted user deposits, gets blacklisted, then deposit reverts
+ * #10 - Greenlisted user deposits, gets blacklisted, then redemption reverts
+ * #11 - Greenlisted user deposits, gets blacklisted, then transfer reverts
+ * #12 - Blacklisted user is un-blacklisted and can deposit again
  */
 describe("Sanctions and Blacklist", function () {
     let depositVault: any;
@@ -19,6 +23,8 @@ describe("Sanctions and Blacklist", function () {
     let zToken: any;
     let mockUSDC: any;
     let mockSanctionsList: any;
+
+    let accessControl: any;
 
     let user: SignerWithAddress;
     let sanctionedUser: SignerWithAddress;
@@ -186,6 +192,7 @@ describe("Sanctions and Blacklist", function () {
         redemptionVault = fixture.redemptionVault;
         zToken = fixture.zToken;
         mockUSDC = fixture.mockUSDC;
+        accessControl = fixture.accessControl;
         user = fixture.userAccount;
         sanctionedUser = fixture.sanctionedAccount;
         blacklistedUser = fixture.blacklistedAccount;
@@ -306,6 +313,129 @@ describe("Sanctions and Blacklist", function () {
 
         it("Clean wallet (not blacklisted) can deposit normally", async function () {
             const depositAmount = ethers.parseUnits("1000", 6);
+            await expect(
+                depositVault.connect(user).depositInstant(
+                    await mockUSDC.getAddress(),
+                    depositAmount,
+                    0,
+                    ethers.ZeroHash
+                )
+            ).to.emit(depositVault, "DepositInstant");
+        });
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // State Transition: Greenlisted user deposits, then gets
+    // blacklisted and can no longer deposit or redeem
+    // ─────────────────────────────────────────────────────────
+    describe("Audit — Blacklist after successful deposit", function () {
+        it("Greenlisted user deposits successfully, gets blacklisted, then deposit reverts", async function () {
+            const depositAmount = ethers.parseUnits("1000", 6);
+
+            // Step 1: user (greenlisted, not blacklisted) deposits successfully
+            await expect(
+                depositVault.connect(user).depositInstant(
+                    await mockUSDC.getAddress(),
+                    depositAmount,
+                    0,
+                    ethers.ZeroHash
+                )
+            ).to.emit(depositVault, "DepositInstant");
+
+            const zBalanceAfterDeposit = await zToken.balanceOf(await user.getAddress());
+            expect(zBalanceAfterDeposit).to.be.greaterThan(0);
+
+            // Step 2: admin blacklists the user
+            const BLACKLISTED_ROLE = await accessControl.BLACKLISTED_ROLE();
+            await accessControl.grantRole(BLACKLISTED_ROLE, await user.getAddress());
+
+            // Step 3: same user tries to deposit again — should revert
+            await expect(
+                depositVault.connect(user).depositInstant(
+                    await mockUSDC.getAddress(),
+                    depositAmount,
+                    0,
+                    ethers.ZeroHash
+                )
+            ).to.be.revertedWith("WZAC: has role");
+        });
+
+        it("Greenlisted user deposits successfully, gets blacklisted, then redemption reverts", async function () {
+            const depositAmount = ethers.parseUnits("1000", 6);
+
+            // Step 1: user deposits to get zOPAL
+            await depositVault.connect(user).depositInstant(
+                await mockUSDC.getAddress(),
+                depositAmount,
+                0,
+                ethers.ZeroHash
+            );
+
+            // Step 2: admin blacklists the user
+            const BLACKLISTED_ROLE = await accessControl.BLACKLISTED_ROLE();
+            await accessControl.grantRole(BLACKLISTED_ROLE, await user.getAddress());
+
+            // Step 3: user tries to redeem — should revert
+            const redeemAmount = ethers.parseUnits("500", 18);
+            await expect(
+                redemptionVault.connect(user).redeemInstant(
+                    await mockUSDC.getAddress(),
+                    redeemAmount,
+                    0
+                )
+            ).to.be.revertedWith("WZAC: has role");
+        });
+
+        it("Greenlisted user deposits successfully, gets blacklisted, then zOPAL transfer reverts", async function () {
+            const depositAmount = ethers.parseUnits("1000", 6);
+
+            // Step 1: user deposits to get zOPAL
+            await depositVault.connect(user).depositInstant(
+                await mockUSDC.getAddress(),
+                depositAmount,
+                0,
+                ethers.ZeroHash
+            );
+
+            // Step 2: admin blacklists the user
+            const BLACKLISTED_ROLE = await accessControl.BLACKLISTED_ROLE();
+            await accessControl.grantRole(BLACKLISTED_ROLE, await user.getAddress());
+
+            // Step 3: user tries to transfer zOPAL — should revert
+            await expect(
+                zToken.connect(user).transfer(await sanctionedUser.getAddress(), ethers.parseUnits("100", 18))
+            ).to.be.revertedWith("WZAC: has role");
+        });
+
+        it("Blacklisted user is un-blacklisted and can deposit again", async function () {
+            const depositAmount = ethers.parseUnits("1000", 6);
+
+            // Step 1: user deposits successfully
+            await depositVault.connect(user).depositInstant(
+                await mockUSDC.getAddress(),
+                depositAmount,
+                0,
+                ethers.ZeroHash
+            );
+
+            // Step 2: blacklist the user
+            const BLACKLISTED_ROLE = await accessControl.BLACKLISTED_ROLE();
+            await accessControl.grantRole(BLACKLISTED_ROLE, await user.getAddress());
+
+            // Step 3: confirm blocked
+            await expect(
+                depositVault.connect(user).depositInstant(
+                    await mockUSDC.getAddress(),
+                    depositAmount,
+                    0,
+                    ethers.ZeroHash
+                )
+            ).to.be.revertedWith("WZAC: has role");
+
+            // Step 4: un-blacklist the user
+            await accessControl.revokeRole(BLACKLISTED_ROLE, await user.getAddress());
+
+            // Step 5: user can deposit again
             await expect(
                 depositVault.connect(user).depositInstant(
                     await mockUSDC.getAddress(),
