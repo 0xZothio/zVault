@@ -37,13 +37,13 @@ const config: HardhatUserConfig = {
 
     polygon: {
       chainId: 137,
-      url: "https://polygon-mainnet.g.alchemy.com/v2/2IKaKbipheAk3qec3VSgM",
+      url: process.env.POLYGON_RPC_URL || "https://polygon-rpc.com",
       accounts: ACCOUNTS,
     },
 
     amoy: {
       chainId: 80002,
-      url: "https://rpc-amoy.polygon.technology",
+      url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       accounts: ACCOUNTS,
     },
 
