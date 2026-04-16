@@ -15,7 +15,7 @@ import "./libraries/DecimalsCorrectionLibrary.sol";
 /**
  * @title DepositVault
  * @notice Smart contract that handles zToken minting
- * @author RedDuck Software
+ * @author Zoth
  */
 contract DepositVault is ManageableVault, IDepositVault {
     using Counters for Counters.Counter;
@@ -347,8 +347,8 @@ contract DepositVault is ManageableVault, IDepositVault {
      * @inheritdoc IDepositVault
      */
     function safeBulkApproveRequest(uint256[] calldata requestIds) external {
-        uint256 currentMTokenRate = _getMTokenRate();
-        safeBulkApproveRequest(requestIds, currentMTokenRate);
+        uint256 currentZTokenRate = _getZTokenRate();
+        safeBulkApproveRequest(requestIds, currentZTokenRate);
     }
 
     /**
@@ -758,7 +758,7 @@ contract DepositVault is ManageableVault, IDepositVault {
     function _convertUsdToZToken(
         uint256 amountUsd
     ) internal view virtual returns (uint256 amountZToken, uint256 zTokenRate) {
-        zTokenRate = _getMTokenRate();
+        zTokenRate = _getZTokenRate();
 
         amountZToken = (amountUsd * (10 ** 18)) / zTokenRate;
     }
@@ -767,7 +767,7 @@ contract DepositVault is ManageableVault, IDepositVault {
      * @dev gets and validates zToken rate
      * @return zTokenRate zToken rate
      */
-    function _getMTokenRate() private view returns (uint256 zTokenRate) {
+    function _getZTokenRate() private view returns (uint256 zTokenRate) {
         zTokenRate = _getTokenRate(address(zTokenDataFeed), false);
         require(zTokenRate > 0, "DV: rate zero");
     }

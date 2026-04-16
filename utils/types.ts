@@ -8,6 +8,21 @@ export interface ContractAddresses {
 }
 
 /**
+ * Timelock configuration for upgrade delays
+ */
+export interface TimelockConfig {
+    /**
+     * Minimum delay in seconds between scheduling and execution
+     * Default: 86400 (24 hours)
+     */
+    minDelay?: number
+    /**
+     * Whether timelock deployment is enabled for this network
+     */
+    enabled?: boolean
+}
+
+/**
  * Role assignment configuration
  * If not specified, roles default to deployer address
  */
@@ -86,6 +101,10 @@ export interface ZothDeploymentConfig extends BaseConfig {
      * Use this for mainnet where deployer should never have these roles
      */
     skipDeployerTokenRoles?: boolean
+    /**
+     * Timelock configuration for upgrade delays
+     */
+    timelock?: TimelockConfig
 }
 
 export interface DeploymentResult {
@@ -99,7 +118,7 @@ export interface VaultConfig {
     instantDailyLimit: bigint
     variationTolerance: number
     minAmount: bigint
-    minMTokenAmountForFirstDeposit: bigint
+    minZTokenAmountForFirstDeposit: bigint
     maxSupplyCap: bigint
 }
 
