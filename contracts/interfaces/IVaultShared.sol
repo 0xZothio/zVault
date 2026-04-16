@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 /**
  * @title IVaultShared
  * @notice Shared types and events used across vault interfaces
- * @author RedDuck Software
+ * @author Zoth
  */
 
 /**

@@ -7,7 +7,7 @@ import "./WithZothAccessControl.sol";
  * @title Blacklistable
  * @notice Base contract that implements basic functions and modifiers
  * to work with blacklistable
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract Blacklistable is WithZothAccessControl {
     /**

@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 
 /**
  * @title DecimalsCorrectionLibrary
- * @author RedDuck Software
+ * @author Zoth
  */
 library DecimalsCorrectionLibrary {
     /**

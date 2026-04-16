@@ -9,7 +9,7 @@ import "./ZothInitializable.sol";
  * @title WithSanctionsList
  * @notice Base contract that uses sanctions oracle from
  * Chainalysis to check that user is not sanctioned
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract WithSanctionsList is WithZothAccessControl {
     /**

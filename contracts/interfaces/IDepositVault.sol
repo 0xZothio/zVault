@@ -23,7 +23,7 @@ struct Request {
 
 /**
  * @title IDepositVault
- * @author RedDuck Software
+ * @author Zoth
  */
 interface IDepositVault is IManageableVault {
     /**

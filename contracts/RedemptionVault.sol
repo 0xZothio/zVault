@@ -18,7 +18,7 @@ import "./libraries/DecimalsCorrectionLibrary.sol";
 /**
  * @title RedemptionVault
  * @notice Smart contract that handles zToken redemptions
- * @author RedDuck Software
+ * @author Zoth
  */
 contract RedemptionVault is ManageableVaultRedeem, IRedemptionVault {
     using Counters for Counters.Counter;

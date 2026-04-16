@@ -7,7 +7,7 @@ import "./zOPALZothAccessControlRoles.sol";
 /**
  * @title zOPALDepositVault
  * @notice Smart contract that handles zOPAL minting
- * @author RedDuck Software
+ * @author Zoth
  */
 contract zOPALDepositVault is DepositVault, zOPALZothAccessControlRoles {
     /**

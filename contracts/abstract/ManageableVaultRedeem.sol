@@ -22,7 +22,7 @@ import "../access/Pausable.sol";
 
 /**
  * @title ManageableVaultRedeem
- * @author RedDuck Software
+ * @author Zoth
  * @notice Contract with base Vault Redeem methods
  */
 abstract contract ManageableVaultRedeem is

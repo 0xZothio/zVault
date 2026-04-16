@@ -7,7 +7,7 @@ import "../abstract/ZothInitializable.sol";
 /**
  * @title WithZothAccessControl
  * @notice Base contract that consumes ZothAccessControl
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract WithZothAccessControl is
     ZothInitializable,

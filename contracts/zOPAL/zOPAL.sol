@@ -11,7 +11,7 @@ import "../interfaces/IZToken.sol";
  * @title zOPAL
  * @notice zOPAL token with blacklist and sanctions list enforcement on transfers
  * @dev Prevents sanctioned users from transferring tokens to bypass redemption blocks
- * @author RedDuck Software
+ * @author Zoth
  */
 contract zOPAL is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZToken {
     /**

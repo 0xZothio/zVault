@@ -7,7 +7,7 @@ import "./IVaultShared.sol";
 
 /**
  * @title IManageableVault
- * @author RedDuck Software
+ * @author Zoth
  */
 interface IManageableVault is IVaultSharedEvents {
     /**

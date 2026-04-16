@@ -4,7 +4,7 @@ pragma solidity 0.8.9;
 /**
  * @title zOPALZothAccessControlRoles
  * @notice Base contract that stores all roles descriptors for zOPAL contracts
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract zOPALZothAccessControlRoles {
     /**

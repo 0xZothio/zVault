@@ -9,7 +9,7 @@ import "../libraries/DecimalsCorrectionLibrary.sol";
 
 /**
  * @title IDataFeed
- * @author RedDuck Software
+ * @author Zoth
  */
 interface IDataFeed {
     /**

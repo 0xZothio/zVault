@@ -22,7 +22,7 @@ import "../access/Pausable.sol";
 
 /**
  * @title ManageableVault
- * @author RedDuck Software
+ * @author Zoth
  * @notice Contract with base Vault methods
  */
 abstract contract ManageableVault is

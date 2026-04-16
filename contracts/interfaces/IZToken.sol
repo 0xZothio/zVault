@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
  * @title IZToken
- * @author RedDuck Software
+ * @author Zoth
  */
 interface IZToken is IERC20Upgradeable {
     /**

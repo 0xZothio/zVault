@@ -8,7 +8,7 @@ import "../access/WithZothAccessControl.sol";
  * @title Pausable
  * @notice Base contract that implements basic functions and modifiers
  * with pause functionality
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract Pausable is WithZothAccessControl, PausableUpgradeable {
     mapping(bytes4 => bool) public fnPaused;

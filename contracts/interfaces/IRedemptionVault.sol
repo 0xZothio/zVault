@@ -30,7 +30,7 @@ struct FiatRedeptionInitParams {
 
 /**
  * @title IRedemptionVault
- * @author RedDuck Software
+ * @author Zoth
  */
 interface IRedemptionVault is IManageableVaultRedeem {
     /**

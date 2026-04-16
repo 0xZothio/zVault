@@ -9,7 +9,7 @@ import "../abstract/ZothInitializable.sol";
 /**
  * @title ZothAccessControl
  * @notice Smart contract that stores all roles for Zoth project
- * @author RedDuck Software
+ * @author Zoth
  */
 contract ZothAccessControl is
     AccessControlUpgradeable,

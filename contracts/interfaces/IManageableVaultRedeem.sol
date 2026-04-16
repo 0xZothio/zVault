@@ -7,7 +7,7 @@ import "./IVaultShared.sol";
 
 /**
  * @title IManageableVaultRedeem
- * @author RedDuck Software
+ * @author Zoth
  * @notice Interface for redemption vault with different addPaymentToken signature (no allowance parameter)
  * @dev Shared types and events are imported from IVaultShared.sol.
  *      Only AddPaymentToken event differs (no allowance parameter).

@@ -7,7 +7,7 @@ import "./WithZothAccessControl.sol";
  * @title Greenlistable
  * @notice Base contract that implements basic functions and modifiers
  * to work with greenlistable
- * @author RedDuck Software
+ * @author Zoth
  */
 abstract contract Greenlistable is WithZothAccessControl {
     /**

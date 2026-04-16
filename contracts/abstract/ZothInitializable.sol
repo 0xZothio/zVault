@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 /**
  * @title ZothInitializable
- * @author RedDuck Software
+ * @author Zoth
  * @notice Base Initializable contract that implements constructor
  * that calls _disableInitializers() to prevent
  * initialization of implementation contract
