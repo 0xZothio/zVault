@@ -5,21 +5,22 @@ import * as fs from "fs";
  * zOPAL Upgrade Script
  * 
  * This script:
- *   1. Deploys the new zOPAL implementation contract
+ *   1. Deploys the new zOPAL implementation (or uses existing one)
  *   2. Verifies it on BaseScan
  *   3. Generates ALL calldata needed for the timelock upgrade
  *   4. Saves everything to a JSON file for reference
  * 
  * Usage:
- *   npx hardhat run scripts/upgrade-zopal.ts --network base
+ *   npx hardhat run scripts/upgrade-zopal.ts --network base                    # deploy new impl
+ *   npx hardhat run scripts/upgrade-zopal.ts --network base 0xIMPL_ADDRESS     # use existing impl
  */
 
 // ============================================================
 // ADDRESSES — Update these if they change
 // ============================================================
-const PROXY_ADMIN = "0x5A9916C8B89F4Cc97B782d5138Ea54A17EB79b84";
-const ZOPAL_PROXY = "0x2E9705d95f1624faB9CAAba775234571BD557f24";
-const TIMELOCK_ADDR = "0xFF082079c027f01D61045b8ecEafab92dDFd6856";
+const PROXY_ADMIN   = ethers.getAddress("0x5A9916C8B89F4Cc97B782d5138Ea54A17EB79b84");
+const ZOPAL_PROXY   = ethers.getAddress("0x2E9705d95f1624faB9CAAba775234571BD557f24");
+const TIMELOCK_ADDR = ethers.getAddress("0xff082079c027f01d61045b8eceafab92ddfd6856");
 
 async function main() {
     const [deployer] = await ethers.getSigners();
@@ -36,35 +37,48 @@ async function main() {
     console.log(`  Timelock:    ${TIMELOCK_ADDR}`);
     console.log("");
 
-    // ========== Deploy new implementation ==========
-    console.log("─── Deploying new zOPAL implementation ───");
-    console.log("");
+    // ========== Deploy or use existing implementation ==========
+    let NEW_IMPL: string;
 
-    const zOPALFactory = await ethers.getContractFactory("zOPAL");
-    console.log("  Deploying...");
-    const newImpl = await zOPALFactory.deploy();
-    await newImpl.waitForDeployment();
-    const NEW_IMPL = await newImpl.getAddress();
-    console.log(`  ✅ New zOPAL implementation deployed: ${NEW_IMPL}`);
-    console.log("");
+    // Check if an implementation address was passed as a CLI argument
+    // process.argv: [node, script, ...args, --network, base]
+    const implArg = process.argv.find(arg => arg.startsWith("0x"));
 
-    // Verify
-    try {
-        console.log("  Verifying on block explorer...");
-        await require("hardhat").run("verify:verify", {
-            address: NEW_IMPL,
-            constructorArguments: []
-        });
-        console.log("  ✅ Verified!");
-    } catch (error: any) {
-        if (error.message.includes("Already Verified") || error.message.includes("already verified")) {
-            console.log("  ✅ Already verified");
-        } else {
-            console.log("  ⚠️  Verification failed — verify manually:");
-            console.log(`     npx hardhat verify --network base ${NEW_IMPL}`);
+    if (implArg) {
+        NEW_IMPL = ethers.getAddress(implArg);
+        console.log("─── Using existing zOPAL implementation ───");
+        console.log(`  ✅ Implementation: ${NEW_IMPL}`);
+        console.log("");
+    } else {
+        console.log("─── Deploying new zOPAL implementation ───");
+        console.log("");
+
+        const zOPALFactory = await ethers.getContractFactory("zOPAL");
+        console.log("  Deploying...");
+        const newImpl = await zOPALFactory.deploy();
+        await newImpl.waitForDeployment();
+        NEW_IMPL = await newImpl.getAddress();
+        console.log(`  ✅ New zOPAL implementation deployed: ${NEW_IMPL}`);
+        console.log("");
+
+        // Verify
+        try {
+            console.log("  Verifying on block explorer...");
+            await require("hardhat").run("verify:verify", {
+                address: NEW_IMPL,
+                constructorArguments: []
+            });
+            console.log("  ✅ Verified!");
+        } catch (error: any) {
+            if (error.message.includes("Already Verified") || error.message.includes("already verified")) {
+                console.log("  ✅ Already verified");
+            } else {
+                console.log("  ⚠️  Verification failed — verify manually:");
+                console.log(`     npx hardhat verify --network base ${NEW_IMPL}`);
+            }
         }
+        console.log("");
     }
-    console.log("");
 
     // ========== Generate all calldata ==========
     console.log("─── Generating calldata ───");
