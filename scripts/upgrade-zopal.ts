@@ -11,8 +11,8 @@ import * as fs from "fs";
  *   4. Saves everything to a JSON file for reference
  * 
  * Usage:
- *   npx hardhat run scripts/upgrade-zopal.ts --network base                    # deploy new impl
- *   npx hardhat run scripts/upgrade-zopal.ts --network base 0xIMPL_ADDRESS     # use existing impl
+ *   npx hardhat run scripts/upgrade-zopal.ts --network base                                          # deploy new impl
+ *   IMPL=0xADDRESS npx hardhat run scripts/upgrade-zopal.ts --network base                           # use existing impl
  */
 
 // ============================================================
@@ -40,12 +40,8 @@ async function main() {
     // ========== Deploy or use existing implementation ==========
     let NEW_IMPL: string;
 
-    // Check if an implementation address was passed as a CLI argument
-    // process.argv: [node, script, ...args, --network, base]
-    const implArg = process.argv.find(arg => arg.startsWith("0x"));
-
-    if (implArg) {
-        NEW_IMPL = ethers.getAddress(implArg);
+    if (process.env.IMPL) {
+        NEW_IMPL = ethers.getAddress(process.env.IMPL);
         console.log("─── Using existing zOPAL implementation ───");
         console.log(`  ✅ Implementation: ${NEW_IMPL}`);
         console.log("");
