@@ -13,7 +13,12 @@ import "../interfaces/IZToken.sol";
  * @dev Prevents sanctioned users from transferring tokens to bypass redemption blocks
  * @author Zoth
  */
-contract zOPAL is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZToken {
+contract zOPAL is
+    ERC20PausableUpgradeable,
+    Blacklistable,
+    WithSanctionsList,
+    IZToken
+{
     /**
      * @notice metadata key => metadata value
      */
@@ -35,7 +40,15 @@ contract zOPAL is ERC20PausableUpgradeable, Blacklistable, WithSanctionsList, IZ
     ) external virtual initializer {
         __Blacklistable_init(_accessControl);
         __WithSanctionsList_init_unchained(_sanctionsList);
-        __ERC20_init("Zoth BlackOpal", "zOPAL");
+        __ERC20_init("zOPAL", "zOPAL");
+    }
+
+    /**
+     * @notice V2 reinitializer — updates token name and symbol
+     * @dev Called once during upgradeAndCall via Timelock
+     */
+    function initializeV2() external reinitializer(2) {
+        __ERC20_init_unchained("Zoth BlackOpal", "zOPAL");
     }
 
     /**
