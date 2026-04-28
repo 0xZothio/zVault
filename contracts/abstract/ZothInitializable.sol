@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.9;
+
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
+/**
+ * @title ZothInitializable
+ * @author Zoth
+ * @notice Base Initializable contract that implements constructor
+ * that calls _disableInitializers() to prevent
+ * initialization of implementation contract
+ */
+abstract contract ZothInitializable is Initializable {
+    constructor() {
+        _disableInitializers();
+    }
+}
+

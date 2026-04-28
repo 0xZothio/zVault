@@ -1,6 +1,7 @@
-# Remix compiler artifacts
+# Compiler artifacts
 **/artifacts/
 **/artifacts/**
+cache/
 
 # Remix plugin state folders
 deps/
@@ -10,6 +11,26 @@ states/
 *.dbg.json
 *.tsbuildinfo
 
-# Optional
+# Environment variables (NEVER commit)
 .env
 .env.local
+.env.production
+
+# Dependencies
+node_modules/
+
+# Generated types
+typechain-types/
+
+# Deployment state (hardhat-deploy)
+deployments/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Gas reporter output
+gasReporterOutput.json
+
+# Timelock upgrade operation files
+upgrade-operation-*.json

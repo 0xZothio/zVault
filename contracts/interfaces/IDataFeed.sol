@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.9;
+
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import "@chainlink/local/src/data-feeds/interfaces/AggregatorV3Interface.sol";
+
+import "../access/WithZothAccessControl.sol";
+import "../libraries/DecimalsCorrectionLibrary.sol";
+
+/**
+ * @title IDataFeed
+ * @author Zoth
+ */
+interface IDataFeed {
+    /**
+     * @notice fetches answer from aggregator
+     * and converts it to the base18 precision
+     * @return answer fetched aggregator answer
+     */
+    function getDataInBase18() external view returns (uint256 answer);
+
+    /**
+     * @dev describes a role, owner of which can manage this feed
+     * @return role descriptor
+     */
+    function feedAdminRole() external view returns (bytes32);
+
+    /**
+     * @notice returns the timestamp of the last price update
+     * @return timestamp of last update
+     */
+    function getLastUpdateTimestamp() external view returns (uint256);
+}

@@ -1,0 +1,173 @@
+import { ethers } from 'hardhat'
+import { DeployFunction } from 'hardhat-deploy/types'
+import { HardhatRuntimeEnvironment } from 'hardhat/types'
+import { DeploymentManager } from '../deployment-manager/DeploymentManager'
+import { Logger } from '../utils/logger'
+
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+    const { network } = hre
+
+    // Initialize deployment manager
+    const deploymentManager = new DeploymentManager(network.name, hre);
+    await deploymentManager.initialize();
+
+    // Get config from manager
+    const config = await deploymentManager.getConfig()
+
+    // Get required contract addresses
+    const accessControlAddress = config.contractAddresses['ZothAccessControl']
+    const zOPALAddress = config.contractAddresses['zOPAL']
+    const dataFeedAddress = config.contractAddresses['PriceOracle']
+
+    if (!accessControlAddress || !zOPALAddress || !dataFeedAddress) {
+        throw new Error(
+            'Required contracts not deployed:\n' +
+            `  - ZothAccessControl: ${accessControlAddress || 'MISSING'}\n` +
+            `  - zOPAL: ${zOPALAddress || 'MISSING'}\n` +
+            `  - PriceOracle: ${dataFeedAddress || 'MISSING'}`
+        )
+    }
+
+    Logger.log('ZothAccessControl', accessControlAddress, 1)
+    Logger.log('zOPAL', zOPALAddress, 1)
+    Logger.log('PriceOracle', dataFeedAddress, 1)
+
+    // Configuration parameters
+    const [deployer] = await ethers.getSigners()
+
+    const zTokenInitParams = {
+        zToken: zOPALAddress,
+        zTokenDataFeed: dataFeedAddress,
+    }
+
+    const receiversInitParams = {
+        tokensReceiver: config.tokensReceiver || deployer.address,
+        feeReceiver: config.feeReceiver || deployer.address,
+    }
+
+    const instantInitParams = {
+        instantFee: 0, // 0% (no fee for deposits)
+        instantDailyLimit: ethers.parseEther('10000000'), // 10M USD daily limit
+    }
+
+    const sanctionsList = config.sanctionsList || ethers.ZeroAddress
+    const variationTolerance = 1 // 0.01% (1 basis point)
+    const minAmount = ethers.parseEther('0.0001') // 0.0001 USD minimum
+    const minZTokenAmountForFirstDeposit = ethers.parseEther('0.0001') // 0.0001 USD minimum first deposit
+    const maxSupplyCap = ethers.parseEther('1000000000') // 1B zOPAL
+
+    Logger.log('Configuration:', undefined, 1)
+    Logger.log('  Tokens Receiver', receiversInitParams.tokensReceiver, 1)
+    Logger.log('  Fee Receiver', receiversInitParams.feeReceiver, 1)
+    Logger.log('  Instant Fee', (instantInitParams.instantFee / 100) + '%', 1)
+    Logger.log('  Daily Limit', ethers.formatEther(instantInitParams.instantDailyLimit) + ' USD', 1)
+    Logger.log('  Variation Tolerance', (variationTolerance / 100) + '%', 1)
+    Logger.log('  Min Amount', ethers.formatEther(minAmount) + ' USD', 1)
+    Logger.log('  Min First Deposit', ethers.formatEther(minZTokenAmountForFirstDeposit) + ' USD', 1)
+    Logger.log('  Max Supply Cap', ethers.formatEther(maxSupplyCap), 1)
+
+    // Get the contract factory
+    const zOPALDepositVault = await ethers.getContractFactory('zOPALDepositVault')
+
+    // Prepare initialization parameters
+    const initParams = [
+        accessControlAddress,
+        zTokenInitParams,
+        receiversInitParams,
+        instantInitParams,
+        sanctionsList,
+        variationTolerance,
+        minAmount,
+        minZTokenAmountForFirstDeposit,
+        maxSupplyCap,
+    ]
+
+    // Encode initializer
+    const initData = zOPALDepositVault.interface.encodeFunctionData(
+        'initialize',
+        initParams
+    )
+
+    // Deploy the contract
+    const [implementationAddress, proxyAddress] = await deploymentManager.deployContract(
+        'zOPALDepositVault',
+        zOPALDepositVault,
+        [],
+        initData
+    )
+
+    // Grant mint role to vault (essential for vault to function)
+    const ZothAccessControl = await ethers.getContractAt('ZothAccessControl', accessControlAddress)
+    const ZOPAL_MINT_OPERATOR_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ZOPAL_MINT_OPERATOR_ROLE'))
+
+    const vaultHasMintRole = await ZothAccessControl.hasRole(ZOPAL_MINT_OPERATOR_ROLE, proxyAddress)
+    if (!vaultHasMintRole) {
+        const tx = await ZothAccessControl.grantRole(ZOPAL_MINT_OPERATOR_ROLE, proxyAddress)
+        await tx.wait()
+        Logger.success('MINT_OPERATOR_ROLE granted to vault', undefined, 1)
+    } else {
+        Logger.info('Vault already has MINT_OPERATOR_ROLE', undefined, 1)
+    }
+
+    // ========== Grant ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE to deployer ==========
+    const ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes('ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE'))
+    const deployerHasVaultAdmin = await ZothAccessControl.hasRole(ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE, deployer.address)
+    if (!deployerHasVaultAdmin) {
+        const tx = await ZothAccessControl.grantRole(ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE, deployer.address)
+        await tx.wait()
+        Logger.success('ZOPAL_DEPOSIT_VAULT_ADMIN_ROLE granted to deployer', undefined, 1)
+    }
+
+    // ========== Add USDC Payment Token ==========
+    const vault = await ethers.getContractAt('zOPALDepositVault', proxyAddress)
+    
+    // USDC on Base mainnet
+    const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+    const paymentTokens = await vault.getPaymentTokens()
+    
+    if (!paymentTokens.map((t: string) => t.toLowerCase()).includes(USDC_ADDRESS.toLowerCase())) {
+        Logger.log('Adding USDC payment token', USDC_ADDRESS, 1)
+        const addTokenTx = await vault.addPaymentToken(
+            USDC_ADDRESS,           // token
+            dataFeedAddress,        // dataFeed (not used for stablecoins, but must be non-zero)
+            0,                      // tokenFee: 0% 
+            ethers.MaxUint256,      // allowance: unlimited
+            true                    // stable: true (uses 1:1 rate)
+        )
+        await addTokenTx.wait()
+        Logger.success('USDC added as payment token', '0% fee, stable', 1)
+    } else {
+        Logger.info('USDC already added as payment token', undefined, 1)
+    }
+
+    // Verify deployment
+    const vaultAccessControl = await vault.accessControl()
+    const vaultZToken = await vault.zToken()
+    const vaultMinAmount = await vault.minAmount()
+    const vaultMaxSupplyCap = await vault.maxSupplyCap()
+
+    Logger.log('Verification:', '', 1)
+    Logger.log('Access Control matches', (vaultAccessControl.toLowerCase() === accessControlAddress.toLowerCase()).toString(), 2)
+    Logger.log('zToken matches', (vaultZToken.toLowerCase() === zOPALAddress.toLowerCase()).toString(), 2)
+    Logger.log('Min Amount', ethers.formatEther(vaultMinAmount), 2)
+    Logger.log('Max Supply Cap', ethers.formatEther(vaultMaxSupplyCap), 2)
+    Logger.log('Payment Tokens', (await vault.getPaymentTokens()).length.toString(), 2)
+
+    // Verify the contract on live networks
+    await deploymentManager.verifyContract(
+        'zOPALDepositVault',
+        [implementationAddress, proxyAddress],
+        [],
+        initData
+    )
+    await deploymentManager.verifyOnTenderly('zOPALDepositVault', [implementationAddress, proxyAddress])
+
+    Logger.deploymentSuccess('zOPALDepositVault', proxyAddress)
+
+    return true
+}
+
+export default func
+func.tags = ['zOPALDepositVault']
+func.id = 'deploy_zopal_deposit_vault'
+func.dependencies = ['ZothAccessControl', 'zOPAL', 'PriceOracle']
