@@ -30,18 +30,43 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: '--model claude-sonnet-4-5'
+          track_progress: true
           prompt: |
             You are reviewing a PR in the zVault Solidity / Hardhat repo.
-            FIRST read CLAUDE.md at the repo root for project context, roles,
-            upgrade flow, and security invariants. Then review the PR diff.
 
-            Perform a DEEP security-focused review of every changed .sol file
-            and a general correctness review of everything else (TS scripts,
-            deploy files, hardhat config, tests).
+            === HOW TO POST YOUR REVIEW (READ THIS FIRST) ===
+            You have GitHub MCP tools available for posting on the PR. Plain
+            text in your final response will be HIDDEN and will NOT reach the
+            PR. The only way your review reaches reviewers is through tool
+            calls. You MUST use these tools:
+
+            - `mcp__github_inline_comment__create_inline_comment` — call this
+              ONCE per location-specific finding. Pass the file path, the
+              line number, and the comment body. You may call it many times.
+            - `mcp__github_comment__update_claude_comment` — call this ONCE
+              at the very end with the full Markdown summary using the format
+              given below. This updates the sticky review comment that the
+              action pre-creates.
+
+            If you finish your turn without calling
+            `update_claude_comment`, your review will be invisible. Always
+            end your work by calling `update_claude_comment` exactly once.
+
+            === REVIEW PROCESS ===
+            1. Read `CLAUDE.md` at the repo root for project context, roles,
+               upgrade flow, and security invariants.
+            2. Read every changed file in the PR diff.
+            3. Perform a DEEP security-focused review of every changed
+               `.sol` file and a general correctness review of everything
+               else (TS scripts, deploy files, hardhat config, tests).
+            4. For each location-specific issue, post one inline comment
+               via `mcp__github_inline_comment__create_inline_comment`.
+            5. Finish by calling `mcp__github_comment__update_claude_comment`
+               exactly once with the summary in the format below.
 
             === Mandatory checks for Solidity changes ===
-            - Access control: every external/public state-changing function is
-              gated by the correct role from ZothAccessControl
+            - Access control: every external/public state-changing function
+              is gated by the correct role from ZothAccessControl
               (DEPOSIT_VAULT_ADMIN_ROLE, REDEMPTION_VAULT_ADMIN_ROLE,
               ZOPAL_MINT_OPERATOR_ROLE, ZOPAL_BURN_OPERATOR_ROLE,
               ZOPAL_PAUSE_OPERATOR_ROLE, GREENLIST_OPERATOR_ROLE,
@@ -77,11 +102,24 @@ jobs:
               vaults -> timelock).
             - No accidental mainnet deploys behind a typoed network name.
 
-            === Output format ===
-            Post a single PR review with this structure:
-            1. **Verdict**: APPROVE / REQUEST_CHANGES / COMMENT
-            2. **Critical issues** (blockers — security, correctness, fund loss)
-            3. **Suggestions** (non-blocking improvements)
-            4. **Nits** (style, naming, comments)
-            Use inline line comments wherever the issue is location-specific.
-            Be concise. If a section is empty, write "None".
+            === Summary review format ===
+            Pass this Markdown body to
+            `mcp__github_comment__update_claude_comment`:
+
+            ## Verdict
+            APPROVE / REQUEST_CHANGES / COMMENT — one line of justification.
+
+            ## Critical issues (blockers)
+            - …
+            (write "None" if empty)
+
+            ## Suggestions (non-blocking)
+            - …
+            (write "None" if empty)
+
+            ## Nits
+            - …
+            (write "None" if empty)
+
+            Be concise. Inline comments should explain the issue and propose
+            a fix snippet when reasonable.
