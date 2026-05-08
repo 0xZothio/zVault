@@ -1,0 +1,87 @@
+name: Claude PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    name: Claude security & code review
+    if: github.event.pull_request.draft == false && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: '--model claude-sonnet-4-5'
+          prompt: |
+            You are reviewing a PR in the zVault Solidity / Hardhat repo.
+            FIRST read CLAUDE.md at the repo root for project context, roles,
+            upgrade flow, and security invariants. Then review the PR diff.
+
+            Perform a DEEP security-focused review of every changed .sol file
+            and a general correctness review of everything else (TS scripts,
+            deploy files, hardhat config, tests).
+
+            === Mandatory checks for Solidity changes ===
+            - Access control: every external/public state-changing function is
+              gated by the correct role from ZothAccessControl
+              (DEPOSIT_VAULT_ADMIN_ROLE, REDEMPTION_VAULT_ADMIN_ROLE,
+              ZOPAL_MINT_OPERATOR_ROLE, ZOPAL_BURN_OPERATOR_ROLE,
+              ZOPAL_PAUSE_OPERATOR_ROLE, GREENLIST_OPERATOR_ROLE,
+              BLACKLIST_OPERATOR_ROLE, GREENLISTED_ROLE, BLACKLISTED_ROLE).
+            - Reentrancy: nonReentrant on any function that makes external
+              calls AND mutates state; verify CEI ordering.
+            - Upgradeability: storage layout preserved (no inserted/reordered
+              vars in upgradeable contracts), __gap respected, no logic in
+              constructors, initializer / reinitializer guards correct,
+              _disableInitializers() in implementation constructors.
+            - Oracle: staleness / heartbeat checks on Chainlink-style feeds,
+              roundId / answeredInRound completeness, negative price guard,
+              decimal normalization via DecimalsCorrectionLibrary.
+            - Math: overflow risk inside `unchecked` blocks, decimals
+              normalization correctness, rounding direction always favors
+              the protocol (not the user) on deposit/redeem accounting.
+            - External calls: return values checked (especially ERC20
+              transfers — prefer SafeERC20), follow checks-effects-interactions.
+            - Events: emitted on every meaningful state change
+              (deposits, redemptions, role grants, pauses, oracle updates).
+            - Pause / sanctions / blacklist / greenlist gates not bypassed
+              on any user-facing entry point.
+            - Timelock + multisig upgrade flow not bypassed
+              (see scripts/timelock-upgrade-multisig.ts and
+              scripts/transfer-proxyadmin.ts).
+            - No hardcoded admin / treasury / oracle addresses inside
+              contracts; they must come from access control or initializers.
+
+            === Checks for TS / scripts / deploy ===
+            - No hardcoded chain-specific addresses outside config/deployed/.
+            - Env vars guarded (fail fast if missing) before any tx.
+            - Deploy ordering correct (access control -> token -> oracle ->
+              vaults -> timelock).
+            - No accidental mainnet deploys behind a typoed network name.
+
+            === Output format ===
+            Post a single PR review with this structure:
+            1. **Verdict**: APPROVE / REQUEST_CHANGES / COMMENT
+            2. **Critical issues** (blockers — security, correctness, fund loss)
+            3. **Suggestions** (non-blocking improvements)
+            4. **Nits** (style, naming, comments)
+            Use inline line comments wherever the issue is location-specific.
+            Be concise. If a section is empty, write "None".
