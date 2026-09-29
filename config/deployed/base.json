@@ -3,6 +3,7 @@
   "chainId": 8453,
   "contractAddresses": {
     "ProxyAdmin": "0x5A9916C8B89F4Cc97B782d5138Ea54A17EB79b84",
+    "UpgradeTimelock": "0xfF082079c027f01D61045b8ecEafab92dDFd6856",
     "ZothAccessControl": "0x11E5c20a11e8b75BB2Ae6F136DaB1cBB1DA9CBb1",
     "zOPAL": "0x2E9705d95f1624faB9CAAba775234571BD557f24",
     "FunctionsAccessControl": "0x58722C4F1a8BCa491dCF074AE3C6B519cC859cB7",

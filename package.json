@@ -20,7 +20,10 @@
     "deploy:oracle": "hardhat deploy --tags PriceOracle",
     "deploy:deposit-vault": "hardhat deploy --tags zOPALDepositVault",
     "deploy:redemption-vault": "hardhat deploy --tags RedemptionVault",
-    "deploy:all": "hardhat deploy --tags Complete"
+    "deploy:all": "hardhat deploy --tags Complete",
+    "deploy:mag7": "hardhat deploy --tags MAG7Complete",
+    "deploy:mag7:hardhat": "hardhat deploy --tags MAG7Complete --network hardhat",
+    "deploy:mag7:base": "hardhat deploy --tags MAG7Complete --network base"
   },
   "keywords": [],
   "author": "",

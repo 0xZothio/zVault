@@ -14,6 +14,17 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     // Get config from manager
     const config = await deploymentManager.getConfig()
 
+    // Reuse ZothAccessControl when it is already in deployed config.
+    const existingAccessControl = config.contractAddresses['ZothAccessControl']
+    if (
+        existingAccessControl &&
+        network.name !== 'hardhat' &&
+        network.name !== 'localhost'
+    ) {
+        Logger.info('Reusing live ZothAccessControl', existingAccessControl)
+        return true
+    }
+
     // Get the contract factory
     const ZothAccessControl = await ethers.getContractFactory('ZothAccessControl')
 

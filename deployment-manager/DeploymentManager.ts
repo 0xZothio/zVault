@@ -25,24 +25,54 @@ export class DeploymentManager {
     }
 
     /**
+     * Attach to an already-deployed ProxyAdmin.
+     */
+    public async useExistingProxyAdmin(address: string): Promise<string> {
+        const code = await this.hre.ethers.provider.getCode(address);
+        if (!code || code === '0x') {
+            throw new Error(`ProxyAdmin ${address} has no bytecode on ${this.network}`);
+        }
+        this.proxyAdminAddress = address;
+        Logger.info('Using shared ProxyAdmin', address);
+        return address;
+    }
+
+    /**
      * Deploy or get existing ProxyAdmin
      * ProxyAdmin is the contract that controls all proxy upgrades
      */
     public async deployProxyAdmin(): Promise<string> {
         const config = await this.getConfig();
 
-        // Check if already deployed
-        if (config.contractAddresses['ProxyAdmin']) {
-            this.proxyAdminAddress = config.contractAddresses['ProxyAdmin'];
-            Logger.info('Using existing ProxyAdmin', this.proxyAdminAddress);
-            return this.proxyAdminAddress;
+        const tryExisting = async (address: string | undefined): Promise<string | null> => {
+            if (!address) {
+                return null;
+            }
+            const code = await this.hre.ethers.provider.getCode(address);
+            if (!code || code === '0x') {
+                return null;
+            }
+            this.proxyAdminAddress = address;
+            Logger.info('Using existing ProxyAdmin', address);
+            return address;
+        };
+
+        const fromConfig = await tryExisting(config.contractAddresses['ProxyAdmin']);
+        if (fromConfig) {
+            return fromConfig;
+        }
+
+        if (config.contractAddresses['ProxyAdmin'] && this.network !== 'hardhat' && this.network !== 'localhost') {
+            throw new Error(
+                `Configured ProxyAdmin ${config.contractAddresses['ProxyAdmin']} has no bytecode. ` +
+                `Refusing to deploy a second ProxyAdmin on ${this.network}.`
+            );
         }
 
         const existingDeployment = await this.hre.deployments.getOrNull('ProxyAdmin');
-        if (existingDeployment) {
-            this.proxyAdminAddress = existingDeployment.address;
-            Logger.info('Using existing ProxyAdmin', this.proxyAdminAddress);
-            return this.proxyAdminAddress;
+        const fromDeployments = await tryExisting(existingDeployment?.address);
+        if (fromDeployments) {
+            return fromDeployments;
         }
 
         Logger.deploymentStart('ProxyAdmin');
