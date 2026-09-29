@@ -30,58 +30,47 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_args: '--model claude-sonnet-4-5'
+          track_progress: true
           prompt: |
-            You are reviewing a PR in the zVault Solidity / Hardhat repo.
-            FIRST read CLAUDE.md at the repo root for project context, roles,
-            upgrade flow, and security invariants. Then review the PR diff.
+            Review this pull request in the zVault Solidity / Hardhat repository.
 
-            Perform a DEEP security-focused review of every changed .sol file
-            and a general correctness review of everything else (TS scripts,
-            deploy files, hardhat config, tests).
+            Read CLAUDE.md first, then inspect every changed file in the
+            pull-request diff against origin/main.
 
-            === Mandatory checks for Solidity changes ===
-            - Access control: every external/public state-changing function is
-              gated by the correct role from ZothAccessControl
-              (DEPOSIT_VAULT_ADMIN_ROLE, REDEMPTION_VAULT_ADMIN_ROLE,
-              ZOPAL_MINT_OPERATOR_ROLE, ZOPAL_BURN_OPERATOR_ROLE,
-              ZOPAL_PAUSE_OPERATOR_ROLE, GREENLIST_OPERATOR_ROLE,
-              BLACKLIST_OPERATOR_ROLE, GREENLISTED_ROLE, BLACKLISTED_ROLE).
-            - Reentrancy: nonReentrant on any function that makes external
-              calls AND mutates state; verify CEI ordering.
-            - Upgradeability: storage layout preserved (no inserted/reordered
-              vars in upgradeable contracts), __gap respected, no logic in
-              constructors, initializer / reinitializer guards correct,
-              _disableInitializers() in implementation constructors.
-            - Oracle: staleness / heartbeat checks on Chainlink-style feeds,
-              roundId / answeredInRound completeness, negative price guard,
-              decimal normalization via DecimalsCorrectionLibrary.
-            - Math: overflow risk inside `unchecked` blocks, decimals
-              normalization correctness, rounding direction always favors
-              the protocol (not the user) on deposit/redeem accounting.
-            - External calls: return values checked (especially ERC20
-              transfers — prefer SafeERC20), follow checks-effects-interactions.
-            - Events: emitted on every meaningful state change
-              (deposits, redemptions, role grants, pauses, oracle updates).
-            - Pause / sanctions / blacklist / greenlist gates not bypassed
-              on any user-facing entry point.
-            - Timelock + multisig upgrade flow not bypassed
-              (see scripts/timelock-upgrade-multisig.ts and
-              scripts/transfer-proxyadmin.ts).
-            - No hardcoded admin / treasury / oracle addresses inside
-              contracts; they must come from access control or initializers.
+            Perform a security-focused review of all changed Solidity files and a
+            correctness review of TypeScript, deployment scripts, Hardhat config,
+            and tests.
 
-            === Checks for TS / scripts / deploy ===
-            - No hardcoded chain-specific addresses outside config/deployed/.
-            - Env vars guarded (fail fast if missing) before any tx.
-            - Deploy ordering correct (access control -> token -> oracle ->
-              vaults -> timelock).
-            - No accidental mainnet deploys behind a typoed network name.
+            Check especially:
 
-            === Output format ===
-            Post a single PR review with this structure:
-            1. **Verdict**: APPROVE / REQUEST_CHANGES / COMMENT
-            2. **Critical issues** (blockers — security, correctness, fund loss)
-            3. **Suggestions** (non-blocking improvements)
-            4. **Nits** (style, naming, comments)
-            Use inline line comments wherever the issue is location-specific.
-            Be concise. If a section is empty, write "None".
+            - Correct role-based access control
+            - Reentrancy and checks-effects-interactions
+            - Upgradeable storage layout and initializer safety
+            - Oracle staleness, negative prices, round completeness, and decimals
+            - Arithmetic overflow and rounding direction
+            - Safe ERC20 transfers and checked return values
+            - Events for meaningful state changes
+            - Pause, sanctions, blacklist, and greenlist enforcement
+            - Timelock and multisig upgrade flow
+            - Hardcoded addresses
+            - Missing environment-variable validation
+            - Deployment ordering
+            - Protection against accidental mainnet deployments
+
+            Return a concise Markdown review with this format:
+
+            ## Verdict
+            APPROVE, REQUEST_CHANGES, or COMMENT — with one-line justification.
+
+            ## Critical issues (blockers)
+            - None, or list each blocker with file and line references.
+
+            ## Suggestions (non-blocking)
+            - None, or list suggestions.
+
+            ## Nits
+            - None, or list minor issues.
+
+            Include a concrete fix snippet when useful.
+            Write the review as your final response. Do not require GitHub MCP
+            tools or `update_claude_comment`.
