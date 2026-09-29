@@ -18,7 +18,20 @@
                 "priceAdmin": "0x15925A7571f5bD7CE67EeeddFAA31136E565683e",
                 "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
             },
-            "skipDeployerTokenRoles": true
+            "skipDeployerTokenRoles": true,
+            "mag7Roles": {
+                "defaultAdmin": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "depositVaultAdmin": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "redemptionVaultAdmin": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8",
+                "pauseOperator": "0xf7dec551FAaA4EC4d7b31087BB58102bBbD379a1",
+                "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "priceAdmin": "0x6C274Ef198D4850aC9C888113785745743444dC4",
+                "configRole": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "tokensReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "feeReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "requestRedeemer": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8"
+            }
         },
         "localhost": {
             "network": "localhost",
@@ -29,7 +42,20 @@
             "sanctionsList": "0x0000000000000000000000000000000000000000",
             "requestRedeemer": "",
             "roles": {},
-            "skipDeployerTokenRoles": false
+            "skipDeployerTokenRoles": false,
+            "mag7Roles": {
+                "defaultAdmin": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "depositVaultAdmin": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "redemptionVaultAdmin": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8",
+                "pauseOperator": "0xf7dec551FAaA4EC4d7b31087BB58102bBbD379a1",
+                "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "priceAdmin": "0x6C274Ef198D4850aC9C888113785745743444dC4",
+                "configRole": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "tokensReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "feeReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "requestRedeemer": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8"
+            }
         },
         "polygon": {
             "network": "polygon",
@@ -84,6 +110,19 @@
             "timelock": {
                 "minDelay": 86400,
                 "enabled": true
+            },
+            "mag7Roles": {
+                "defaultAdmin": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "depositVaultAdmin": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "redemptionVaultAdmin": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8",
+                "pauseOperator": "0xf7dec551FAaA4EC4d7b31087BB58102bBbD379a1",
+                "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+                "priceAdmin": "0x6C274Ef198D4850aC9C888113785745743444dC4",
+                "configRole": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+                "tokensReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "feeReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+                "requestRedeemer": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8"
             }
         },
         "baseSepolia": {

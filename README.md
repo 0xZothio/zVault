@@ -1,6 +1,6 @@
 # zVault Protocol
 
-A tokenized vault system for the zOPAL token, enabling users to deposit stablecoins and receive zOPAL tokens, redeem zOPAL tokens back for underlying assets, and stake USDC to earn Zocta Points.
+A tokenized vault system for zOPAL and zMAG7, enabling users to deposit stablecoins and receive product tokens, redeem those tokens back for underlying assets, and stake USDC to earn Zocta Points.
 
 ## Table of Contents
 
@@ -8,6 +8,7 @@ A tokenized vault system for the zOPAL token, enabling users to deposit stableco
 - [Architecture](#architecture)
 - [Contracts](#contracts)
 - [Staking Vault](#staking-vault)
+- [zMAG7](#zmag7)
 - [Timelock Upgrades](#timelock-upgrades)
 - [Getting Started](#getting-started)
 - [Testing](#testing)
@@ -22,8 +23,8 @@ A tokenized vault system for the zOPAL token, enabling users to deposit stableco
 
 zVault is a DeFi protocol that provides:
 
-- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive zOPAL tokens
-- **Redemption Functionality**: Users burn zOPAL tokens to receive underlying stablecoins
+- **Deposit Functionality**: Users deposit stablecoins (USDC, USDT, etc.) and receive zOPAL or zMAG7
+- **Redemption Functionality**: Users burn product tokens to receive underlying stablecoins
 - **Staking Vault**: Users stake USDC with configurable lock periods, earning Zocta Points off-chain
 - **Price Oracle**: Configurable price feed with tolerance checks for fair pricing
 - **Access Control**: Role-based permission system for secure operations
@@ -120,6 +121,10 @@ zVault is a DeFi protocol that provides:
 | `zOPALDepositVault.sol` | zOPAL-specific deposit vault | `contracts/zOPAL/zOPALDepositVault.sol` |
 | `zOPALStakingVault.sol` | USDC staking vault with lock periods and FIFO withdrawals | `contracts/zOPAL/zOPALStakingVault.sol` |
 | `zOPALStakingVaultRoles.sol` | Role definitions for staking vault | `contracts/zOPAL/zOPALStakingVaultRoles.sol` |
+| `zMAG7.sol` | ERC20 token with mint, burn, pause, and blacklist | `contracts/zMAG7/zMAG7.sol` |
+| `zMAG7DepositVault.sol` | zMAG7 deposit vault | `contracts/zMAG7/zMAG7DepositVault.sol` |
+| `zMAG7RedemptionVault.sol` | zMAG7 redemption vault | `contracts/zMAG7/zMAG7RedemptionVault.sol` |
+| `zMAG7ZothAccessControlRoles.sol` | Role identifiers for zMAG7 | `contracts/zMAG7/zMAG7ZothAccessControlRoles.sol` |
 
 ### Access Control
 
@@ -205,6 +210,35 @@ The `zOPALStakingVault` allows users to deposit USDC, which is converted to zOPA
 | `getWithdrawableWithoutPenalty(user)` | USDC from expired deposits (penalty-free) |
 | `estimateWithdrawal(user, amount)` | Preview net amount and penalty before requesting |
 | `getReserveBalance()` | Current USDC reserves available for withdrawals |
+
+---
+
+## zMAG7
+
+zMAG7 is a second product on the same vault stack. It shares **ZothAccessControl**, **ProxyAdmin**, and **UpgradeTimelock** with zOPAL. It has its own token, deposit vault, redemption vault, and PriceOracle (with a dedicated FunctionsAccessControl).
+
+Mint, burn, pause, and vault-admin roles are MAG7-specific (`MAG7_MINT_OPERATOR_ROLE`, etc.), so a zOPAL vault cannot mint zMAG7 and a MAG7 vault cannot mint zOPAL.
+
+zOPAL deposits stay on `depositInstant`. MAG7 pauses both `depositInstant` overloads so users use `depositRequest`; the MAG7 deposit vault admin later calls `approveRequest`. Instant redemption is paused on MAG7, same as the zOPAL redemption deploy script.
+
+### MAG7 deployment (Base)
+
+zOPAL is already live. MAG7 deploy attaches to that stack instead of redeploying it. The old zOPAL deployer (`0x2e62…`) is not `DEFAULT_ADMIN` on the live **ZothAccessControl** contract, so MAG7Complete skips those grants and writes `out/mag7-role-grants-<network>.json`. Submit ZothAccessControl `grantRole` from `0x973Bd2510d866b1F2494c97ca9fd9595037B2F04`. MAG7 vault-admin roles are on ZothAccessControl, not on MAG7 FunctionsAccessControl. MAG7 FunctionsAccessControl is a new oracle ACL; the deployer can grant MAG7 `PRICE_ADMIN` / `CONFIG` during the script.
+
+```bash
+pnpm deploy:mag7:hardhat   # local
+pnpm deploy:mag7:base      # Base mainnet (prints launch values, type yes)
+```
+
+On Base the first MAG7 script prints addresses and launch params and waits for `yes`. It also writes `out/mag7-launch-review-base.md`. After MAG7Complete finishes, leftover grants are in `out/mag7-role-grants-base.json` (and `.md`).
+
+After MAG7 is deployed, upgrades use the same timelock path as zOPAL:
+
+```bash
+STEP=1 CONTRACT=zMAG7 npx hardhat run scripts/timelock-upgrade-multisig.ts --network base
+```
+
+`CONTRACT` may also be `zMAG7DepositVault` or `zMAG7RedemptionVault`.
 
 ---
 
@@ -391,6 +425,11 @@ Scripts are located in the `deploy/` directory and execute in order:
 | 05 | `05-deploy-all.ts` | `Complete` | Orchestrates full deployment |
 | 06 | `06-deploy-timelock.ts` | `UpgradeTimelock` | Deploys UpgradeTimelock with role config |
 | 07 | `07-deploy-zopal-staking-vault.ts` | `zOPALStakingVault` | Deploys zOPAL staking vault |
+| 10 | `10-deploy-zmag7-oracle.ts` | `MAG7PriceOracle` | Deploys MAG7 PriceOracle and FunctionsAccessControl |
+| 11 | `11-deploy-zmag7-token.ts` | `zMAG7` | Deploys zMAG7 token |
+| 12 | `12-deploy-zmag7-deposit-vault.ts` | `zMAG7DepositVault` | Deploys MAG7 deposit vault |
+| 13 | `13-deploy-zmag7-redemption-vault.ts` | `zMAG7RedemptionVault` | Deploys MAG7 redemption vault |
+| 14 | `14-deploy-zmag7-all.ts` | `MAG7Complete` | Grants MAG7 roles and verifies shared ProxyAdmin / timelock |
 
 ### NPM Scripts
 
@@ -416,7 +455,10 @@ pnpm deploy:zopal           # Only zOPAL token
 pnpm deploy:oracle          # Only PriceOracle
 pnpm deploy:deposit-vault   # Only zOPALDepositVault
 pnpm deploy:redemption-vault # Only RedemptionVault
-pnpm deploy:all             # Full deployment with orchestration
+pnpm deploy:all             # Full zOPAL deployment with orchestration
+pnpm deploy:mag7            # zMAG7 stack (reuses existing access control / ProxyAdmin)
+pnpm deploy:mag7:hardhat    # zMAG7 on local hardhat
+pnpm deploy:mag7:base       # zMAG7 on Base, attached to live zOPAL infra
 
 # Start local node
 pnpm node
@@ -444,6 +486,22 @@ UpgradeTimelock
        │
        ▼
 zOPALStakingVault
+```
+
+MAG7 (after zOPAL is live):
+
+```
+ZothAccessControl, ProxyAdmin, UpgradeTimelock  (existing)
+       │
+       ▼
+MAG7PriceOracle
+       │
+       ▼
+     zMAG7
+       │
+       ├──────────────┐
+       ▼              ▼
+zMAG7DepositVault  zMAG7RedemptionVault
 ```
 
 ---
@@ -525,6 +583,16 @@ See `config/DEPLOYMENT_CONFIG_README.md` for detailed configuration documentatio
 | `STAKING_VAULT_ADMIN_ROLE` | Manage staking vault config, approve/reject withdrawals |
 | `STAKING_VAULT_PAUSE_OPERATOR_ROLE` | Pause/unpause the staking vault |
 
+### zMAG7 Roles
+
+| Role | Description |
+|------|-------------|
+| `MAG7_MINT_OPERATOR_ROLE` | Can mint zMAG7 (held by the MAG7 deposit vault) |
+| `MAG7_BURN_OPERATOR_ROLE` | Can burn zMAG7 (held by the MAG7 redemption vault) |
+| `MAG7_PAUSE_OPERATOR_ROLE` | Can pause/unpause zMAG7 |
+| `MAG7_DEPOSIT_VAULT_ADMIN_ROLE` | Admin actions on the MAG7 deposit vault |
+| `MAG7_REDEMPTION_VAULT_ADMIN_ROLE` | Admin actions on the MAG7 redemption vault |
+
 ### UpgradeTimelock Roles
 
 | Role | Description |
@@ -576,10 +644,11 @@ zVault/
 │   ├── libraries/         # Utility libraries
 │   ├── utils/             # Utility contracts (proxy, timelock)
 │   ├── zOPAL/             # zOPAL token, deposit vault, staking vault
+│   ├── zMAG7/             # zMAG7 token, deposit vault, redemption vault
 │   ├── DepositVault.sol
 │   ├── RedemptionVault.sol
 │   └── PriceOracle.sol
-├── deploy/                # Deployment scripts (00-07)
+├── deploy/                # Deployment scripts (00-07 zOPAL, 10-14 zMAG7)
 ├── scripts/               # Operational scripts (upgrades, timelock)
 ├── test/                  # Test files (11 test suites)
 ├── exploits/              # Security exploit POCs
