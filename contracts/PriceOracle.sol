@@ -248,6 +248,37 @@ contract PriceOracle is WithFunctionsAccessControl, IDataFeed {
     }
 
     /**
+     * @notice Atomically returns the current base18 price together with the
+     *         timestamp of its last update
+     * @dev Useful for callers that need both values consistently in one read
+     *      (e.g. vaults computing TWAP windows or settlement timing). Reverts
+     *      if no price has ever been set, and if the price is stale when
+     *      `maxStaleness > 0`.
+     * @return price The current price with 18 decimals
+     * @return timestamp Block timestamp at which the price was last updated
+     */
+    function getPriceWithTimestamp()
+        external
+        view
+        returns (uint256 price, uint256 timestamp)
+    {
+        if (lastUpdateTimestamp == 0) revert PriceNotSet();
+
+        if (maxStaleness > 0) {
+            uint256 priceAge = block.timestamp - lastUpdateTimestamp;
+            if (priceAge > maxStaleness) {
+                revert StalePrice(
+                    lastUpdateTimestamp,
+                    block.timestamp,
+                    maxStaleness
+                );
+            }
+        }
+
+        return (currentPrice, lastUpdateTimestamp);
+    }
+
+    /**
      * @notice Get price age in seconds
      * @return age Time since last price update in seconds
      */
