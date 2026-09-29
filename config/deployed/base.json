@@ -9,7 +9,12 @@
     "FunctionsAccessControl": "0x58722C4F1a8BCa491dCF074AE3C6B519cC859cB7",
     "PriceOracle": "0x2756bF902563B6e767A6E9EC20abFaB3706715Eb",
     "zOPALDepositVault": "0x6578Fe7a4A8c0B8C34FC8c85A8f99cc16affe850",
-    "RedemptionVault": "0x87e86d6930f7e922E02cD92821fBaaF9D5e9B403"
+    "RedemptionVault": "0x87e86d6930f7e922E02cD92821fBaaF9D5e9B403",
+    "zMAG7": "0xCe154D6C180526905C0e26514055Afb99f833fdd",
+    "MAG7FunctionsAccessControl": "0x8C91F2A3A8f61cCAf86a0FF2A7e012A173caAF44",
+    "MAG7PriceOracle": "0x69bfb67078da8Bbd6232276DB8901EB6f0cFEAc3",
+    "zMAG7DepositVault": "0x396462033Ecc069edF5Bc5fF69637408EF00fb96",
+    "zMAG7RedemptionVault": "0x5432924364Db47DC1614f3FFf32CB66cb7EaC210"
   },
   "tokensReceiver": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
   "feeReceiver": "0x16B83aE45d362327cb230aC4Cf72C94190601f7a",
@@ -26,8 +31,25 @@
     "configRole": "0x973Bd2510d866b1F2494c97ca9fd9595037B2F04"
   },
   "skipDeployerTokenRoles": true,
+  "timelock": {
+    "minDelay": 86400,
+    "enabled": true
+  },
+  "mag7Roles": {
+    "defaultAdmin": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+    "depositVaultAdmin": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+    "redemptionVaultAdmin": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8",
+    "pauseOperator": "0xf7dec551FAaA4EC4d7b31087BB58102bBbD379a1",
+    "greenlistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+    "blacklistOperator": "0xb9dD4396f0f849508E96e656af1a10f83ea314C6",
+    "priceAdmin": "0x6C274Ef198D4850aC9C888113785745743444dC4",
+    "configRole": "0x722E901c5ad8493d1212Aa07DD6dA2c3e3857B3B",
+    "tokensReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+    "feeReceiver": "0x3323c503d17aA989DeB4F999c479da0C3C116362",
+    "requestRedeemer": "0x32103982BeBf2DB399A3535E66e95D0C908c97b8"
+  },
   "deployment": {
-    "timestamp": "2026-03-19T11:36:39.348Z",
+    "timestamp": "2026-09-29T06:08:37.316Z",
     "version": "1.0.0",
     "deployer": "unknown",
     "network": "base"
