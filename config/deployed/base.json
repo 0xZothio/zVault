@@ -8,7 +8,8 @@
     "FunctionsAccessControl": "0x58722C4F1a8BCa491dCF074AE3C6B519cC859cB7",
     "PriceOracle": "0x2756bF902563B6e767A6E9EC20abFaB3706715Eb",
     "zOPALDepositVault": "0x6578Fe7a4A8c0B8C34FC8c85A8f99cc16affe850",
-    "RedemptionVault": "0x87e86d6930f7e922E02cD92821fBaaF9D5e9B403"
+    "RedemptionVault": "0x87e86d6930f7e922E02cD92821fBaaF9D5e9B403",
+    "UpgradeTimelock": "0xfF082079c027f01D61045b8ecEafab92dDFd6856"
   },
   "tokensReceiver": "0x57a134a61915163F4b3F69fED708c7a8836AE277",
   "feeReceiver": "0x16B83aE45d362327cb230aC4Cf72C94190601f7a",
